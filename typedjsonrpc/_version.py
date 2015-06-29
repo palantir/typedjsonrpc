@@ -37,8 +37,8 @@ def get_config():
     cfg.VCS = "git"
     cfg.style = "pep440"
     cfg.tag_prefix = "None"
-    cfg.parentdir_prefix = "decorator_jsonrpc"
-    cfg.versionfile_source = "decorator_jsonrpc/_version.py"
+    cfg.parentdir_prefix = "typedjsonrpc"
+    cfg.versionfile_source = "typedjsonrpc/_version.py"
     cfg.verbose = False
     return cfg
 
