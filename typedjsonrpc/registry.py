@@ -1,6 +1,6 @@
 """This module contains logic for storing and calling jsonrpc methods."""
 import json
-
+import inspect
 
 __all__ = ["Registry"]
 
@@ -39,7 +39,7 @@ class Registry(object):
         """
         self._name_to_method[name] = method
 
-    def method(self):
+    def method(self, **argtypes):
         """Syntactic sugar for registering a method"""
         def wrapper(func):
             """Registers a method with its fully qualified name.
@@ -49,8 +49,24 @@ class Registry(object):
             :returns: The original function unmodified
             :rtype: T
             """
+            def wrapped(*args):
+                """ Type-checks the arguments and then does the same as func
+                :param args: The arguments passed to func
+                :return: Wrapped function
+                """
+                argnames = inspect.getargspec(func).args
+                types = list(argtypes.values())
+                if len(args) != len(types):
+                    raise TypeError("Number of arguments (%s) does not match number"
+                                    "of expected types (%s)." % (len(args), len(types)))
+                for i in range(0, len(args)):
+                    if not isinstance(args[i], argtypes[argnames[i]]):
+                        raise TypeError("Value '%s' is not of expected type %s"
+                                        % (args[i], argtypes[argnames[i]]))
+                return func(*args)
+
             fully_qualified_name = "{}.{}".format(func.__module__, func.__name__)
-            self._name_to_method[fully_qualified_name] = func
-            return func
+            self._name_to_method[fully_qualified_name] = wrapped
+            return wrapped
 
         return wrapper
