@@ -20,7 +20,7 @@ def test_method():
     @registry.method(x=str)
     def foo(x):
         return x
-    expected_name = "{}.{}".format("test_registry", "foo")
+    expected_name = "{}.{}".format(foo.__module__, foo.__name__)
     assert expected_name in registry._name_to_method
     assert registry._name_to_method[expected_name] == foo
 
@@ -32,6 +32,9 @@ def test_method_correct_argtypes():
     def foo(some_text, some_number):
         return some_text + str(some_number)
     assert foo("Hello", 5) == "Hello5"
+    assert foo(some_text="Hello", some_number=5) == "Hello5"
+    assert foo("Hello", some_number=5) == "Hello5"
+    assert foo(some_number=5, some_text="Hello") == "Hello5"
 
     @registry.method()
     def bar():
@@ -52,7 +55,18 @@ def test_method_wrong_number_arguments():
         return some_text
     assert foo("Hello") == "Hello"
     with pytest.raises(TypeError):
+        foo()
+    with pytest.raises(TypeError):
         foo("Hello", "World")
+
+
+def test_method_wrong_type_declarations():
+    registry = Registry()
+
+    with pytest.raises(TypeError):
+        @registry.method(some_text=str, some_number=int)
+        def foo(some_text, some_stuff):
+            return some_text + some_stuff
 
 
 def test_method_wrong_argument_order():

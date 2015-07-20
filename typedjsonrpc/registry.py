@@ -1,6 +1,7 @@
 """This module contains logic for storing and calling jsonrpc methods."""
 import json
 import inspect
+import wrapt
 
 __all__ = ["Registry"]
 
@@ -41,32 +42,54 @@ class Registry(object):
 
     def method(self, **argtypes):
         """Syntactic sugar for registering a method"""
-        def wrapper(func):
-            """Registers a method with its fully qualified name.
-
-            :param func: The function to register
-            :type func: T
-            :returns: The original function unmodified
-            :rtype: T
+        @wrapt.decorator
+        def type_check_wrapper(wrapped, instance, args, kwargs):
+            """ Wraps a function so that it is type-checked.
+            :param function func: The function to wrap
+            :return: The original function wrapped into a type-checker
             """
-            def wrapped(*args):
-                """ Type-checks the arguments and then does the same as func
-                :param args: The arguments passed to func
-                :return: Wrapped function
-                """
-                argnames = inspect.getargspec(func).args
-                types = list(argtypes.values())
-                if len(args) != len(types):
-                    raise TypeError("Number of arguments (%s) does not match number"
-                                    "of expected types (%s)." % (len(args), len(types)))
-                for i in range(0, len(args)):
-                    if not isinstance(args[i], argtypes[argnames[i]]):
-                        raise TypeError("Value '%s' is not of expected type %s"
-                                        % (args[i], argtypes[argnames[i]]))
-                return func(*args)
+            if instance is not None:
+                raise Exception("Instance shouldn't be set.")
 
+            argument_names = inspect.getargspec(wrapped).args
+            # More arguments in call than in declaration?
+            if len(args) > len(argument_names):
+                raise TypeError("Number of arguments (%s) is less than number"
+                                "of declared arguments (%s)." % (len(args), len(argument_names)))
+            # Check types of args
+            for i in range(0, len(args)):
+                if not isinstance(args[i], argtypes[argument_names[i]]):
+                    raise TypeError("Value '%s' is not of expected type %s"
+                                    % (args[i], argtypes[argument_names[i]]))
+            # Check types of kwargs
+            for key, value in kwargs.items():
+                if key not in argtypes.keys():
+                    raise TypeError("Argument '%s' is not expected" % key)
+                if not isinstance(value, argtypes[key]):
+                    raise TypeError("Value '%s' for argument '%s' is not of type %s"
+                                    % (value, key, argtypes[key]))
+            # Call the original method
+            return wrapped(*args, **kwargs)
+
+        def register_function(func):
+            """ Registers a method with its fully qualified name.
+            :param function func: The function to register
+            :return: The original function wrapped into a type-checker
+            """
+            # Check that exactly the parameter names of the function have declared types
+            function_arguments = inspect.getargspec(func).args
+            type_declarations = argtypes.items()
+            if len(function_arguments) != len(type_declarations):
+                raise TypeError("Number of function arguments (%s) does not match number of "
+                                "declared types (%s)"
+                                % (len(function_arguments), len(type_declarations)))
+            for arg in function_arguments:
+                if arg not in argtypes.keys():
+                    raise TypeError("Argument '%s' does not have a declared type" % arg)
+
+            wrapped_function = type_check_wrapper(func, None, None, None)
             fully_qualified_name = "{}.{}".format(func.__module__, func.__name__)
-            self._name_to_method[fully_qualified_name] = wrapped
-            return wrapped
+            self._name_to_method[fully_qualified_name] = wrapped_function
+            return wrapped_function
 
-        return wrapper
+        return register_function
