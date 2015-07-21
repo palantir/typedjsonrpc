@@ -63,7 +63,7 @@ def test_method_wrong_number_arguments():
 def test_method_wrong_type_declarations():
     registry = Registry()
 
-    with pytest.raises(TypeError):
+    with pytest.raises(Exception):
         @registry.method(some_text=str, some_number=int)
         def foo(some_text, some_stuff):
             return some_text + some_stuff

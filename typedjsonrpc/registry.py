@@ -1,6 +1,6 @@
 """This module contains logic for storing and calling jsonrpc methods."""
-import json
 import inspect
+import json
 import wrapt
 
 __all__ = ["Registry"]
@@ -52,23 +52,10 @@ class Registry(object):
                 raise Exception("Instance shouldn't be set.")
 
             argument_names = inspect.getargspec(wrapped).args
-            # More arguments in call than in declaration?
-            if len(args) > len(argument_names):
-                raise TypeError("Number of arguments (%s) is less than number"
-                                "of declared arguments (%s)." % (len(args), len(argument_names)))
-            # Check types of args
-            for i in range(0, len(args)):
-                if not isinstance(args[i], argtypes[argument_names[i]]):
-                    raise TypeError("Value '%s' is not of expected type %s"
-                                    % (args[i], argtypes[argument_names[i]]))
-            # Check types of kwargs
-            for key, value in kwargs.items():
-                if key not in argtypes.keys():
-                    raise TypeError("Argument '%s' is not expected" % key)
-                if not isinstance(value, argtypes[key]):
-                    raise TypeError("Value '%s' for argument '%s' is not of type %s"
-                                    % (value, key, argtypes[key]))
-            # Call the original method
+
+            self.check_types(zip(argument_names, args), argtypes)
+            self.check_types(kwargs.items(), argtypes)
+
             return wrapped(*args, **kwargs)
 
         def register_function(func):
@@ -76,16 +63,7 @@ class Registry(object):
             :param function func: The function to register
             :return: The original function wrapped into a type-checker
             """
-            # Check that exactly the parameter names of the function have declared types
-            function_arguments = inspect.getargspec(func).args
-            type_declarations = argtypes.items()
-            if len(function_arguments) != len(type_declarations):
-                raise TypeError("Number of function arguments (%s) does not match number of "
-                                "declared types (%s)"
-                                % (len(function_arguments), len(type_declarations)))
-            for arg in function_arguments:
-                if arg not in argtypes.keys():
-                    raise TypeError("Argument '%s' does not have a declared type" % arg)
+            self.check_type_declaration(inspect.getargspec(func).args, argtypes)
 
             wrapped_function = type_check_wrapper(func, None, None, None)
             fully_qualified_name = "{}.{}".format(func.__module__, func.__name__)
@@ -93,3 +71,30 @@ class Registry(object):
             return wrapped_function
 
         return register_function
+
+    @staticmethod
+    def check_types(arguments, argument_types):
+        """ Checks that the given arguments have the correct types.
+        :param list arguments: (name, value) of the given arguments
+        :param dict argument_types: Parameter type by name.
+        """
+        for name, value in arguments:
+            if name not in argument_types:
+                raise TypeError("Argument '%s' is not expected" % (name,))
+            if not isinstance(value, argument_types[name]):
+                raise TypeError("Value '%s' for parameter '%s' is not of expected type %s"
+                                % (value, name, argument_types[name]))
+
+    @staticmethod
+    def check_type_declaration(parameter_names, type_declarations):
+        """ Checks that exactly the given parameter names have declared types.
+        :param list parameter_names: The names of the parameters in the function declaration
+        :param dict type_declarations: Parameter type by name
+        """
+        if len(parameter_names) != len(type_declarations):
+            raise Exception("Number of function arguments (%s) does not match number of "
+                            "declared types (%s)"
+                            % (len(parameter_names), len(type_declarations)))
+        for arg in parameter_names:
+            if arg not in type_declarations:
+                raise Exception("Argument '%s' does not have a declared type" % (arg,))
