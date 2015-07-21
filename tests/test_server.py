@@ -45,7 +45,7 @@ class TestDebuggedJsonRpcApplication(object):
         mock_error_logger = mock.Mock()
         environ = {"wsgi.errors": mock_error_logger}
         debugged_app.handle_debug(environ, fake_start_response, traceback_id)
-        # mock_error_logger.assert_any_call()
+        mock_error_logger.write.assert_called_once_with(mock.ANY)
 
     def test_handle_debug_no_such_traceback(self):
         debugged_app = DebuggedJsonRpcApplication(None)
@@ -70,7 +70,8 @@ class TestDebuggedJsonRpcApplication(object):
         assert excinfo.value.code == 404
 
     def test_debug_application_endpoint(self):
-        mock_app = mock.Mock(return_value=["foo"])
+        app_return_value = ["foo"]
+        mock_app = mock.Mock(return_value=app_return_value)
         mock_app.handle_json_error = mock.Mock(return_value=[])
         debugged_app = DebuggedJsonRpcApplication(mock_app)
         environ = {
@@ -80,15 +81,14 @@ class TestDebuggedJsonRpcApplication(object):
             "REQUEST_METHOD": "POST",
             "wsgi.url_scheme": "http",
         }
-        mock_start_response = mock.Mock()
-        result = debugged_app.debug_application(environ, mock_start_response)
-        for _ in result:
-            pass
+        result = debugged_app.debug_application(environ, None)
+        assert app_return_value == [x for x in result]
 
     def test_debug_application_endpoint_exception(self):
         mock_app = mock.Mock()
         mock_app.side_effect = Exception()
-        mock_app.handle_json_error = mock.Mock(return_value=["foo"])
+        handle_json_error_return_value = ["foo"]
+        mock_app.handle_json_error = mock.Mock(return_value=handle_json_error_return_value)
         debugged_app = DebuggedJsonRpcApplication(mock_app)
         environ = {
             "SERVER_NAME": "localhost",
@@ -100,8 +100,7 @@ class TestDebuggedJsonRpcApplication(object):
         }
         mock_start_response = mock.Mock()
         result = debugged_app.debug_application(environ, mock_start_response)
-        for _ in result:
-            pass
+        assert handle_json_error_return_value == [x for x in result]
 
 
 class TestServer(object):
@@ -129,7 +128,8 @@ class TestServer(object):
             "wsgi.url_scheme": "http",
         }
         mock_registry = mock.Mock()
-        mock_registry.dispatch = mock.Mock(return_value="foo")
+        mock_registry.dispatch.return_value = "foo"
         server = Server(mock_registry, "/foo")
         mock_start_response = mock.Mock()
         server(environ, mock_start_response)
+        mock_registry.dispatch.assert_called_once_with(mock.ANY)

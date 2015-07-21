@@ -21,8 +21,9 @@ class Server(object):
 
     def __init__(self, registry, endpoint=DEFAULT_API_ENDPOINT_NAME):
         """
-        :param typedjsonrpc.registry.Registry registry: The jsonrpc registry to use
-        :param str endpoint (optional): The endpoint to publish jsonrpc endpoints. Default "/api".
+        Args:
+            registry (typedjsonrpc.registry.Registry): The jsonrpc registry to use
+            endpoint (str, optional): The endpoint to publish jsonrpc endpoints. Default "/api".
         """
         self._registry = registry
         self.endpoint = endpoint
@@ -73,8 +74,9 @@ class DebuggedJsonRpcApplication(DebuggedApplication):
     """
     def __init__(self, app, **kwargs):
         """
-        :param app: The wsgi application to be debugged
-        :param kwargs: The arguments to pass to the DebuggedApplication
+        Args:
+            app (object): The wsgi application to be debugged
+            **kwargs: The arguments to pass to the DebuggedApplication
         """
         super(DebuggedJsonRpcApplication, self).__init__(app, **kwargs)
         self._debug_map = Map([Rule("/debug/<int:traceback_id>", endpoint="debug")])
@@ -82,8 +84,9 @@ class DebuggedJsonRpcApplication(DebuggedApplication):
     def debug_application(self, environ, start_response):
         """Run the application and preserve the traceback frames.
 
-        :param environ:
-        :param start_response:
+        Args:
+            environ (dict[str, object]):
+            start_response (str, list[(str, str)]) -> None:
         """
         app_iter = None
         adapter = self._debug_map.bind_to_environ(environ)
@@ -114,10 +117,10 @@ class DebuggedJsonRpcApplication(DebuggedApplication):
     def handle_debug(self, environ, start_response, traceback_id):
         """Handles the debug endpoint for inspecting previous errors.
 
-        :param environ:
-        :param start_response:
-        :param int traceback_id: The id of the traceback to inspect
-        :return:
+        Args:
+            environ (dict[str, object]):
+            start_response (str, list[(str, str)]) -> None:
+            traceback_id (int): The id of the traceback to inspect
         """
         if traceback_id not in self.tracebacks:
             abort(404)

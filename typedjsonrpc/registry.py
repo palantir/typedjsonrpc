@@ -13,8 +13,10 @@ class Registry(object):
 
     def dispatch(self, request):
         """Takes a request and dispatches its data to a jsonrpc method.
-        :param werkzeug.wrappers.Request request:
-        :return: json string of the function returned
+        Args:
+            request (werkzeug.wrappers.Request): a werkzeug request with json data
+        Returns:
+            json output of the corresponding function
         """
         msg = json.loads(request.get_data())
         func = self._name_to_method[msg["method"]]
@@ -27,8 +29,10 @@ class Registry(object):
 
     def register(self, name, method):
         """Registers a method with a given name.
-        :param str name: The name to register
-        :param function method:  The function to call
+
+        Args:
+            name (str): The name to register
+            method (function):  The function to call
         """
         self._name_to_method[name] = method
 
@@ -37,8 +41,11 @@ class Registry(object):
         def wrapper(func):
             """Registers a method with its fully qualified name.
 
-            :param function func: The function to register
-            :return: The original function unmodified
+            Args:
+                func (function): The function to register
+
+            Returns:
+                The original function unmodified
             """
             fully_qualified_name = "{}.{}".format(func.__module__, func.__name__)
             self._name_to_method[fully_qualified_name] = func
