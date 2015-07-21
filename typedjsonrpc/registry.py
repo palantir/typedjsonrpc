@@ -41,29 +41,36 @@ class Registry(object):
         self._name_to_method[name] = method
 
     def method(self, **argtypes):
-        """Syntactic sugar for registering a method"""
+        """ Syntactic sugar for registering a method
+        :param argtypes: The types of the function's parameters
+        :type argtypes: dict[str,type]
+        """
         @wrapt.decorator
-        def type_check_wrapper(wrapped, instance, args, kwargs):
+        def type_check_wrapper(func, instance, args, kwargs):
             """ Wraps a function so that it is type-checked.
-            :param function func: The function to wrap
+            :param func: The function to wrap
+            :type func: function
             :return: The original function wrapped into a type-checker
+            :rtype: function
             """
             if instance is not None:
                 raise Exception("Instance shouldn't be set.")
 
-            argument_names = inspect.getargspec(wrapped).args
+            argument_names = inspect.getargspec(func).args
 
-            self.check_types(zip(argument_names, args), argtypes)
-            self.check_types(kwargs.items(), argtypes)
+            self._check_types(zip(argument_names, args), argtypes)
+            self._check_types(kwargs.items(), argtypes)
 
-            return wrapped(*args, **kwargs)
+            return func(*args, **kwargs)
 
         def register_function(func):
             """ Registers a method with its fully qualified name.
-            :param function func: The function to register
+            :param func: The function to register
+            :type func: function
             :return: The original function wrapped into a type-checker
+            :rtype: function
             """
-            self.check_type_declaration(inspect.getargspec(func).args, argtypes)
+            self._check_type_declaration(inspect.getargspec(func).args, argtypes)
 
             wrapped_function = type_check_wrapper(func, None, None, None)
             fully_qualified_name = "{}.{}".format(func.__module__, func.__name__)
@@ -73,10 +80,12 @@ class Registry(object):
         return register_function
 
     @staticmethod
-    def check_types(arguments, argument_types):
+    def _check_types(arguments, argument_types):
         """ Checks that the given arguments have the correct types.
-        :param list arguments: (name, value) of the given arguments
-        :param dict argument_types: Parameter type by name.
+        :param arguments: List of (name, value) pairs of the given arguments
+        :type arguments: list
+        :param argument_types: Parameter type by name.
+        :type argument_types: dict[str,type]
         """
         for name, value in arguments:
             if name not in argument_types:
@@ -86,10 +95,12 @@ class Registry(object):
                                 % (value, name, argument_types[name]))
 
     @staticmethod
-    def check_type_declaration(parameter_names, type_declarations):
+    def _check_type_declaration(parameter_names, type_declarations):
         """ Checks that exactly the given parameter names have declared types.
-        :param list parameter_names: The names of the parameters in the function declaration
-        :param dict type_declarations: Parameter type by name
+        :param parameter_names: The names of the parameters in the function declaration
+        :type parameter_names: list
+        :param type_declarations: Parameter type by name
+        :type type_declarations: dict[str, type]
         """
         if len(parameter_names) != len(type_declarations):
             raise Exception("Number of function arguments (%s) does not match number of "
