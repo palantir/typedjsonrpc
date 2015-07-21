@@ -47,19 +47,6 @@ def test_method_correct_argtypes():
     assert stuff(42, "Answer") == "42Answer"
 
 
-def test_method_wrong_number_arguments():
-    registry = Registry()
-
-    @registry.method(some_text=str)
-    def foo(some_text):
-        return some_text
-    assert foo("Hello") == "Hello"
-    with pytest.raises(TypeError):
-        foo()
-    with pytest.raises(TypeError):
-        foo("Hello", "World")
-
-
 def test_method_wrong_type_declarations():
     registry = Registry()
 
