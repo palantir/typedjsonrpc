@@ -13,24 +13,25 @@ from werkzeug.wrappers import Request, Response
 __all__ = ["Server", "DebuggedJsonRpcApplication"]
 
 
-API_ENDPOINT_NAME = "api"
+DEFAULT_API_ENDPOINT_NAME = "/api"
 
 
 class Server(object):
     """A basic WSGI-compatible server for typedjsonrpc endpoints."""
 
-    def __init__(self, registry, endpoint="/api"):
+    def __init__(self, registry, endpoint=DEFAULT_API_ENDPOINT_NAME):
         """
         :param typedjsonrpc.registry.Registry registry: The jsonrpc registry to use
         :param str endpoint (optional): The endpoint to publish jsonrpc endpoints. Default "/api".
         """
         self._registry = registry
-        self._url_map = Map([Rule(endpoint, endpoint=API_ENDPOINT_NAME)])
+        self.endpoint = endpoint
+        self._url_map = Map([Rule(endpoint, endpoint=self.endpoint)])
 
     def _dispatch_request(self, request):
         adapter = self._url_map.bind_to_environ(request.environ)
         endpoint, _ = adapter.match()
-        if endpoint == API_ENDPOINT_NAME:
+        if endpoint == self.endpoint:
             json_output = self._registry.dispatch(request)
             return Response(json_output, mimetype="application/json")
         else:
