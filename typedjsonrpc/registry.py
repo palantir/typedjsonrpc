@@ -65,9 +65,9 @@ class Registry(object):
                 raise Exception("Instance shouldn't be set.")
 
             argument_names = inspect.getargspec(func).args
-
-            self._check_types(zip(argument_names, args), argtypes)
-            self._check_types(kwargs.items(), argtypes)
+            defaults = inspect.getargspec(func).defaults
+            arguments = self._collect_arguments(argument_names, args, kwargs, defaults)
+            self._check_types(arguments, argtypes)
 
             return func(*args, **kwargs)
 
@@ -88,6 +88,26 @@ class Registry(object):
         return register_function
 
     @staticmethod
+    def _collect_arguments(argument_names, args, kwargs, defaults):
+        """ Creates a dictionary mapping argument names to their values in the function call.
+        :param argument_names: The function's parameter names
+        :param args: args
+        :param kwargs: kwargs
+        :param defaults: The function's default values
+        :return: Dictionary mapping argument names to values
+        """
+        arguments = {}
+        if defaults is not None:
+            zipped_defaults = zip(reversed(argument_names), reversed(defaults))
+            for name, default in zipped_defaults:
+                arguments[name] = default
+        for name, value in zip(argument_names, args):
+            arguments[name] = value
+        for name, value in kwargs.items():
+            arguments[name] = value
+        return arguments
+
+    @staticmethod
     def _check_types(arguments, argument_types):
         """ Checks that the given arguments have the correct types.
         :param arguments: List of (name, value) pairs of the given arguments
@@ -95,12 +115,12 @@ class Registry(object):
         :param argument_types: Argument type by name.
         :type argument_types: dict[str,type]
         """
-        for name, value in arguments:
-            if name not in argument_types:
-                raise TypeError("Argument '%s' is not expected" % (name,))
-            if not isinstance(value, argument_types[name]):
-                raise TypeError("Value '%s' for argument '%s' is not of expected type %s"
-                                % (value, name, argument_types[name]))
+        for name, arg_type in argument_types.items():
+            if name not in arguments:
+                raise TypeError("Argument '%s' is missing" % (name,))
+            if not isinstance(arguments[name], arg_type):
+                raise TypeError("Value '%s' for parameter '%s' is not of expected type %s"
+                                % (arguments[name], name, arg_type))
 
     @staticmethod
     def _check_type_declaration(argument_names, type_declarations):
