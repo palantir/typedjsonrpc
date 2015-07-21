@@ -5,12 +5,12 @@ registry = Registry()
 server = Server(registry)
 
 
-@registry.method(x=int)
+@registry.method(returns=int, x=int)
 def add5(x):
     return x + 5
 
 
-@registry.method(x=str)
+@registry.method(returns=None, x=str)
 def fail(x):
     raise Exception(x)
 
