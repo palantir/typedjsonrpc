@@ -42,6 +42,14 @@ class Registry(object):
 
     def method(self, **argtypes):
         """ Syntactic sugar for registering a method
+
+        Example:
+
+            >>> registry = Registry()
+            >>> @registry.method(x=int, y=int)
+            ... def add(x, y):
+            ...     return x + y
+
         :param argtypes: The types of the function's parameters
         :type argtypes: dict[str,type]
         """
@@ -49,9 +57,9 @@ class Registry(object):
         def type_check_wrapper(func, instance, args, kwargs):
             """ Wraps a function so that it is type-checked.
             :param func: The function to wrap
-            :type func: function
+            :type func: (T) -> U
             :return: The original function wrapped into a type-checker
-            :rtype: function
+            :rtype: (T) -> U
             """
             if instance is not None:
                 raise Exception("Instance shouldn't be set.")
@@ -66,9 +74,9 @@ class Registry(object):
         def register_function(func):
             """ Registers a method with its fully qualified name.
             :param func: The function to register
-            :type func: function
+            :type func: (T) -> U
             :return: The original function wrapped into a type-checker
-            :rtype: function
+            :rtype: (T) -> U
             """
             self._check_type_declaration(inspect.getargspec(func).args, argtypes)
 
@@ -83,7 +91,7 @@ class Registry(object):
     def _check_types(arguments, argument_types):
         """ Checks that the given arguments have the correct types.
         :param arguments: List of (name, value) pairs of the given arguments
-        :type arguments: list
+        :type arguments: list[(str, object)]
         :param argument_types: Parameter type by name.
         :type argument_types: dict[str,type]
         """
@@ -98,7 +106,7 @@ class Registry(object):
     def _check_type_declaration(parameter_names, type_declarations):
         """ Checks that exactly the given parameter names have declared types.
         :param parameter_names: The names of the parameters in the function declaration
-        :type parameter_names: list
+        :type parameter_names: list[str]
         :param type_declarations: Parameter type by name
         :type type_declarations: dict[str, type]
         """
