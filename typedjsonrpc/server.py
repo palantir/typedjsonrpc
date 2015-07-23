@@ -85,7 +85,9 @@ class DebuggedJsonRpcApplication(DebuggedApplication):
     def debug_application(self, environ, start_response):
         """Run the application and preserve the traceback frames.
 
+        :param environ: The environment which is passed into the wsgi application
         :type environ: dict[str, object]
+        :param start_response: The start_response function of the wsgi application
         :type start_response: (str, list[(str, str)]) -> None
         :rtype: generator[str]
         """
@@ -118,7 +120,9 @@ class DebuggedJsonRpcApplication(DebuggedApplication):
     def handle_debug(self, environ, start_response, traceback_id):
         """Handles the debug endpoint for inspecting previous errors.
 
+        :param environ: The environment which is passed into the wsgi application
         :type environ: dict[str, object]
+        :param start_response: The start_response function of the wsgi application
         :type start_response: (str, list[(str, str)]) -> NoneType
         :param traceback_id: The id of the traceback to inspect
         :type traceback_id: int
