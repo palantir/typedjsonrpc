@@ -27,13 +27,13 @@ class Server(object):
         :type endpoint: str
         """
         self._registry = registry
-        self.endpoint = endpoint
-        self._url_map = Map([Rule(endpoint, endpoint=self.endpoint)])
+        self._endpoint = endpoint
+        self._url_map = Map([Rule(endpoint, endpoint=self._endpoint)])
 
     def _dispatch_request(self, request):
         adapter = self._url_map.bind_to_environ(request.environ)
         endpoint, _ = adapter.match()
-        if endpoint == self.endpoint:
+        if endpoint == self._endpoint:
             json_output = self._registry.dispatch(request)
             return Response(json_output, mimetype="application/json")
         else:
