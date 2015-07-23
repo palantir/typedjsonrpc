@@ -54,6 +54,7 @@ setup(
 
     install_requires=[
         "werkzeug",
+        "wrapt"
     ],
 
     extras_require={},
