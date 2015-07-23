@@ -1,9 +1,7 @@
 from typedjsonrpc.server import *
-from werkzeug.debug.tbtools import Traceback
 from werkzeug.exceptions import HTTPException
 import pytest
 import six
-import sys
 
 if six.PY3:
     import unittest.mock as mock
