@@ -50,7 +50,7 @@ class Registry(object):
             ... def add(x, y):
             ...     return x + y
 
-        :param argtypes: The types of the function's parameters
+        :param argtypes: The types of the function's arguments
         :type argtypes: dict[str,type]
         """
         @wrapt.decorator
@@ -92,28 +92,28 @@ class Registry(object):
         """ Checks that the given arguments have the correct types.
         :param arguments: List of (name, value) pairs of the given arguments
         :type arguments: list[(str, object)]
-        :param argument_types: Parameter type by name.
+        :param argument_types: Argument type by name.
         :type argument_types: dict[str,type]
         """
         for name, value in arguments:
             if name not in argument_types:
                 raise TypeError("Argument '%s' is not expected" % (name,))
             if not isinstance(value, argument_types[name]):
-                raise TypeError("Value '%s' for parameter '%s' is not of expected type %s"
+                raise TypeError("Value '%s' for argument '%s' is not of expected type %s"
                                 % (value, name, argument_types[name]))
 
     @staticmethod
-    def _check_type_declaration(parameter_names, type_declarations):
-        """ Checks that exactly the given parameter names have declared types.
-        :param parameter_names: The names of the parameters in the function declaration
-        :type parameter_names: list[str]
-        :param type_declarations: Parameter type by name
+    def _check_type_declaration(argument_names, type_declarations):
+        """ Checks that exactly the given argument names have declared types.
+        :param argument_names: The names of the arguments in the function declaration
+        :type argument_names: list[str]
+        :param type_declarations: Argument type by name
         :type type_declarations: dict[str, type]
         """
-        if len(parameter_names) != len(type_declarations):
+        if len(argument_names) != len(type_declarations):
             raise Exception("Number of function arguments (%s) does not match number of "
                             "declared types (%s)"
-                            % (len(parameter_names), len(type_declarations)))
-        for arg in parameter_names:
+                            % (len(argument_names), len(type_declarations)))
+        for arg in argument_names:
             if arg not in type_declarations:
                 raise Exception("Argument '%s' does not have a declared type" % (arg,))
