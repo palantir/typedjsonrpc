@@ -11,16 +11,6 @@ else:
     import mock
 
 
-def _get_fake_traceback():
-    try:
-        raise Exception()
-    except:
-        return Traceback(*sys.exc_info())
-
-
-_FAKE_TRACEBACK = _get_fake_traceback()
-
-
 class TestDebuggedJsonRpcApplication(object):
     def test_handle_debug(self):
         traceback_id = 5
@@ -28,10 +18,15 @@ class TestDebuggedJsonRpcApplication(object):
 
         def fake_start_response(body, headers):
             pass
-        tb = _FAKE_TRACEBACK
+
+        tb = mock.Mock()
+        fake_output = "foo"
+        tb.render_full = mock.Mock(return_value=fake_output)
         debugged_app.tracebacks[traceback_id] = tb
         result = debugged_app.handle_debug({}, fake_start_response, traceback_id)
-        assert len(result) > 0
+        tb.render_full.assert_called_once_with(secret=debugged_app.secret,
+                                               evalex=debugged_app.evalex)
+        assert result == fake_output.encode("utf-8")
 
     def test_handle_debug_start_response_fails(self):
         traceback_id = 8
@@ -39,13 +34,12 @@ class TestDebuggedJsonRpcApplication(object):
 
         def fake_start_response(body, headers):
             raise Exception()
-
-        tb = _FAKE_TRACEBACK
+        tb = mock.Mock()
+        tb.render_full = mock.Mock(side_effect=AssertionError("Should not be called"))
         debugged_app.tracebacks[traceback_id] = tb
         mock_error_logger = mock.Mock()
         environ = {"wsgi.errors": mock_error_logger}
         debugged_app.handle_debug(environ, fake_start_response, traceback_id)
-        mock_error_logger.write.assert_called_once_with(mock.ANY)
 
     def test_handle_debug_no_such_traceback(self):
         debugged_app = DebuggedJsonRpcApplication(None)
