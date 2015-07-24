@@ -13,6 +13,8 @@ class Registry(object):
 
     def __init__(self):
         self._name_to_method = {}
+        self._name_to_docstring = {}
+        self._name_to_signature = {}
 
     def dispatch(self, request):
         """Takes a request and dispatches its data to a jsonrpc method.
@@ -37,14 +39,19 @@ class Registry(object):
             "result": result
         })
 
-    def register(self, name, method):
+    def register(self, name, method, signature=None):
         """Registers a method with a given name.
         :param name: The name to register
         :type name: str
         :param method: The function to call
         :type method: function
+        :param signature: List of the argument names and types
+        :type signature: list[str, type]
         """
         self._name_to_method[name] = method
+        self._name_to_docstring[name] = method.__doc__
+        if signature is not None:
+            self._name_to_signature[name] = signature
 
     def method(self, **argtypes):
         """ Syntactic sugar for registering a method
@@ -90,12 +97,13 @@ class Registry(object):
             :return: The original function wrapped into a type-checker
             :rtype: (T) -> U
             """
-            self._check_type_declaration(inspect.getargspec(func).args, argtypes)
+            arg_names = inspect.getargspec(func).args
+            self._check_type_declaration(arg_names, argtypes)
 
             wrapped_function = type_check_wrapper(func, None, None, None)
             fully_qualified_name = "{}.{}".format(func.__module__, func.__name__)
-            self._name_to_method[fully_qualified_name] = wrapped_function
-
+            self.register(fully_qualified_name, wrapped_function,
+                          self._get_signature(arg_names, argtypes))
             return wrapped_function
 
         return register_function
@@ -124,6 +132,39 @@ class Registry(object):
         for name, value in kwargs.items():
             arguments[name] = value
         return arguments
+
+    @staticmethod
+    def _get_signature(arg_names, arg_types):
+        signature = []
+        for name in arg_names:
+            signature.append((name, arg_types[name]))
+        return signature
+
+    def describe(self):
+        """ Returns a description of all the functions in the registry.
+        :return: Description
+        """
+        return {
+            "functions": [self._describe_function(name) for name in self._name_to_method.keys()]
+        }
+
+    def _describe_function(self, name):
+        return {
+            "name": name,
+            "params": self._get_parameters(name),
+            "docstring": self._get_docstring(name)
+        }
+
+    def _get_docstring(self, name):
+        if name in self._name_to_docstring:
+            return self._name_to_docstring[name]
+        return None
+
+    def _get_parameters(self, name):
+        if name in self._name_to_signature:
+            return [{"name": p_name, "type": p_type}
+                    for (p_name, p_type) in self._name_to_signature[name]]
+        return None
 
     @staticmethod
     def _check_types(arguments, argument_types):

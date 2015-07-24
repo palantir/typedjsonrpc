@@ -147,6 +147,32 @@ def test_method_parameter_named_returns():
             return str(some_number) + returns
 
 
+def test_describe():
+    registry = Registry()
+
+    @registry.method(returns=str, x=int, y=str)
+    def foo(x, y):
+        return str(x) + y
+    foo_desc = {'params': [{'type': int, 'name': 'x'},
+                           {'type': str, 'name': 'y'}],
+                'name': 'test_registry.foo',
+                'docstring': None}
+    assert(registry.describe()["functions"] == [foo_desc])
+
+    @registry.method(returns=int, a=int, b=int)
+    def bar(a, b):
+        """This is a test."""
+        return a + b
+    bar_desc = {'params': [{'type': int, 'name': 'a'},
+                           {'type': int, 'name': 'b'}],
+                'name': 'test_registry.bar',
+                'docstring': 'This is a test.'}
+    functions = registry.describe()["functions"]
+    assert(bar_desc in functions)
+    assert(foo_desc in functions)
+    assert(len(functions) == 2)
+
+
 def test_dispatch_keyword_args():
     registry = Registry()
 
