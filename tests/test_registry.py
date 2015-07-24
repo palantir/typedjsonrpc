@@ -52,13 +52,13 @@ def test_method_args():
 
     @registry.method(some_text=str, some_number=int)
     def foo(some_text, some_number, *args):
-        return some_text
-    assert foo("Hi", 5, 6, "Test") == "Hi"
+        return some_text + str(some_number) + str(args)
+    assert foo("Hi", 5, 6, "Test") == "Hi5(6, 'Test')"
 
     @registry.method(some_text=str, some_number=int)
     def bar(some_text, some_number, *args, **kwargs):
-        return some_number
-    assert bar("Hi", 5, bla=6, stuff="Test") == 5
+        return some_text + str(some_number) + str(args) + str(kwargs)
+    assert bar("Hi", 5, "foo", bla=6, stuff="Test") == "Hi5('foo',){'stuff': 'Test', 'bla': 6}"
     with pytest.raises(TypeError):
         bar("Hi", test=7)
 
