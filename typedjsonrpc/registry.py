@@ -91,10 +91,15 @@ class Registry(object):
     def _collect_arguments(argument_names, args, kwargs, defaults):
         """ Creates a dictionary mapping argument names to their values in the function call.
         :param argument_names: The function's parameter names
-        :param args: args
-        :param kwargs: kwargs
+        :type argument_names: list[string]
+        :param args: *args passed into the function
+        :type args: list[object]
+        :param kwargs: **kwargs passed into the function
+        :type kwargs: dict[string, object]
         :param defaults: The function's default values
+        :type defaults: list[object]
         :return: Dictionary mapping argument names to values
+        :rtype: dict[string, object]
         """
         arguments = {}
         if defaults is not None:
