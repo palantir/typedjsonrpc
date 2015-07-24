@@ -90,7 +90,7 @@ class Registry(object):
     @staticmethod
     def _collect_arguments(argument_names, args, kwargs, defaults):
         """ Creates a dictionary mapping argument names to their values in the function call.
-        :param argument_names: The function's parameter names
+        :param argument_names: The function's argument names
         :type argument_names: list[string]
         :param args: *args passed into the function
         :type args: list[object]
@@ -124,7 +124,7 @@ class Registry(object):
             if name not in arguments:
                 raise TypeError("Argument '%s' is missing" % (name,))
             if not isinstance(arguments[name], arg_type):
-                raise TypeError("Value '%s' for parameter '%s' is not of expected type %s"
+                raise TypeError("Value '%s' for argument '%s' is not of expected type %s"
                                 % (arguments[name], name, arg_type))
 
     @staticmethod
