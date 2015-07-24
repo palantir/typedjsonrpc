@@ -10,8 +10,7 @@ def test_register():
     def foo(x):
         return x
     registry.register("bar", foo)
-    assert "bar" in registry._name_to_method
-    assert registry._name_to_method["bar"] == foo
+    assert registry._name_to_method_info["bar"].get_method() == foo
 
 
 def test_method():
@@ -21,8 +20,7 @@ def test_method():
     def foo(x):
         return x
     expected_name = "{}.{}".format(foo.__module__, foo.__name__)
-    assert expected_name in registry._name_to_method
-    assert registry._name_to_method[expected_name] == foo
+    assert registry._name_to_method_info[expected_name].get_method() == foo
 
 
 def test_method_correct_argtypes():

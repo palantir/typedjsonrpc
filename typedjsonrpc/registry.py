@@ -3,6 +3,8 @@ import inspect
 import json
 import wrapt
 
+from typedjsonrpc.method_info import MethodInfo
+
 __all__ = ["Registry"]
 
 RETURNS_KEY = "returns"
@@ -12,9 +14,7 @@ class Registry(object):
     """The registry for storing and calling jsonrpc methods."""
 
     def __init__(self):
-        self._name_to_method = {}
-        self._name_to_docstring = {}
-        self._name_to_signature = {}
+        self._name_to_method_info = {}
 
     def dispatch(self, request):
         """Takes a request and dispatches its data to a jsonrpc method.
@@ -26,7 +26,7 @@ class Registry(object):
         :rtype: str
         """
         msg = json.loads(request.get_data())
-        func = self._name_to_method[msg["method"]]
+        func = self._name_to_method_info[msg["method"]].get_method()
         if isinstance(msg["params"], list):
             result = func(*msg["params"])
         elif isinstance(msg["params"], dict):
@@ -40,7 +40,8 @@ class Registry(object):
         })
 
     def register(self, name, method, signature=None):
-        """Registers a method with a given name.
+        """Registers a method with a given name and signature.
+
         :param name: The name to register
         :type name: str
         :param method: The function to call
@@ -48,10 +49,7 @@ class Registry(object):
         :param signature: List of the argument names and types
         :type signature: list[str, type]
         """
-        self._name_to_method[name] = method
-        self._name_to_docstring[name] = method.__doc__
-        if signature is not None:
-            self._name_to_signature[name] = signature
+        self._name_to_method_info[name] = MethodInfo(name, method, signature)
 
     def method(self, **argtypes):
         """ Syntactic sugar for registering a method
@@ -145,26 +143,9 @@ class Registry(object):
         :return: Description
         """
         return {
-            "functions": [self._describe_function(name) for name in self._name_to_method.keys()]
+            "functions": [method_info.describe()
+                          for method_info in self._name_to_method_info.values()]
         }
-
-    def _describe_function(self, name):
-        return {
-            "name": name,
-            "params": self._get_parameters(name),
-            "docstring": self._get_docstring(name)
-        }
-
-    def _get_docstring(self, name):
-        if name in self._name_to_docstring:
-            return self._name_to_docstring[name]
-        return None
-
-    def _get_parameters(self, name):
-        if name in self._name_to_signature:
-            return [{"name": p_name, "type": p_type}
-                    for (p_name, p_type) in self._name_to_signature[name]]
-        return None
 
     @staticmethod
     def _check_types(arguments, argument_types):
@@ -215,3 +196,10 @@ class Registry(object):
         elif not isinstance(value, expected_type):
             raise TypeError("Type of return value '%s' does not match expected type %s"
                             % (value, expected_type))
+
+    @staticmethod
+    def _get_signature(arg_names, arg_types):
+        signature = []
+        for name in arg_names:
+            signature.append((name, arg_types[name]))
+        return signature
