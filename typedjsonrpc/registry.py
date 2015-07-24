@@ -47,7 +47,7 @@ class Registry(object):
         Example:
 
             >>> registry = Registry()
-            >>> @registry.method(x=int, y=int)
+            >>> @registry.method(returns=int, x=int, y=int)
             ... def add(x, y):
             ...     return x + y
 
