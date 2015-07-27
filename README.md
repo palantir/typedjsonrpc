@@ -1,7 +1,10 @@
 # typedjsonrpc 
 typedjsonrpc is a typed decorator-based json-rpc library for Python. It is influenced by [Flask JSON-RPC](https://github.com/cenobites/flask-jsonrpc) but has some key differences: 
-* typedjsonrpc supports floats
-* focus on easy debugging
+
+typedjsonrpc...
+* supports floats
+* allows return type checking
+* focuses on easy debugging
 
 ## Using typedjsonrpc
 ### Installation
@@ -24,14 +27,25 @@ The registry will keep track of the methods that are available for json-rpc - wh
 ### Example usage
 Annotate your methods to make them accessible and provide type information:
 ```
-@registry.method(a=int, b=int)
+@registry.method(returns=int, a=int, b=int)
 def add(a, b):
     return a + b
 
-@registry.method(a=str, b=str)
+@registry.method(returns=str, a=str, b=str)
 def concat(a, b):
     return a + b
 ```
+The return type *has* to be declared using the `returns` keyword. For methods that don't return anything, you can use either `type(None)` or just `None`:
+```
+@registry.method(returns=type(None), a=str)
+def foo(a):
+    print(a)
+    
+@registry.method(returns=None, a=int)
+def bar(a):
+    print(5 * a)
+```
+
 You can use any of the basic json types:
 
 |json type | Python type |

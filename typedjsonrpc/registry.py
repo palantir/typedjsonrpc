@@ -5,6 +5,8 @@ import wrapt
 
 __all__ = ["Registry"]
 
+RETURNS_KEY = "returns"
+
 
 class Registry(object):
     """The registry for storing and calling jsonrpc methods."""
@@ -32,7 +34,6 @@ class Registry(object):
 
     def register(self, name, method):
         """Registers a method with a given name.
-
         :param name: The name to register
         :type name: str
         :param method: The function to call
@@ -46,7 +47,7 @@ class Registry(object):
         Example:
 
             >>> registry = Registry()
-            >>> @registry.method(x=int, y=int)
+            >>> @registry.method(returns=int, x=int, y=int)
             ... def add(x, y):
             ...     return x + y
 
@@ -69,7 +70,10 @@ class Registry(object):
             self._check_types(zip(argument_names, args), argtypes)
             self._check_types(kwargs.items(), argtypes)
 
-            return func(*args, **kwargs)
+            result = func(*args, **kwargs)
+            self._check_return_type(result, argtypes[RETURNS_KEY])
+
+            return result
 
         def register_function(func):
             """ Registers a method with its fully qualified name.
@@ -83,6 +87,7 @@ class Registry(object):
             wrapped_function = type_check_wrapper(func, None, None, None)
             fully_qualified_name = "{}.{}".format(func.__module__, func.__name__)
             self._name_to_method[fully_qualified_name] = wrapped_function
+
             return wrapped_function
 
         return register_function
@@ -110,10 +115,29 @@ class Registry(object):
         :param type_declarations: Argument type by name
         :type type_declarations: dict[str, type]
         """
-        if len(argument_names) != len(type_declarations):
+        if len(argument_names) != len(type_declarations) - 1:
             raise Exception("Number of function arguments (%s) does not match number of "
                             "declared types (%s)"
-                            % (len(argument_names), len(type_declarations)))
+                            % (len(argument_names), len(type_declarations) - 1))
+        if RETURNS_KEY in argument_names:
+            raise Exception("'%s' may not be used as an argument name" % (RETURNS_KEY,))
+        if RETURNS_KEY not in type_declarations:
+            raise Exception("Missing return type declaration")
         for arg in argument_names:
             if arg not in type_declarations:
                 raise Exception("Argument '%s' does not have a declared type" % (arg,))
+
+    @staticmethod
+    def _check_return_type(value, expected_type):
+        """ Checks that the given return value has the correct type.
+        :param value: Value returned by the function
+        :type value: any
+        :param expected_type: Expected return type
+        :type expected_type: type
+        """
+        if expected_type is None:
+            if value is not None:
+                raise TypeError("Returned value is '%s' but None was expected" % (value,))
+        elif not isinstance(value, expected_type):
+            raise TypeError("Type of return value '%s' does not match expected type %s"
+                            % (value, expected_type))
