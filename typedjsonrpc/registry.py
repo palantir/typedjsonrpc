@@ -26,11 +26,16 @@ class Registry(object):
         msg = json.loads(request.get_data())
         func = self._name_to_method[msg["method"]]
         if isinstance(msg["params"], list):
-            return json.dumps(func(*msg["params"]))
+            result = func(*msg["params"])
         elif isinstance(msg["params"], dict):
-            return json.dumps(func(**msg["params"]))
+            result = func(**msg["params"])
         else:
             raise Exception("Invalid params type")
+        return json.dumps({
+            "jsonrpc": "2.0",
+            "id": msg["id"],
+            "result": result
+        })
 
     def register(self, name, method):
         """Registers a method with a given name.

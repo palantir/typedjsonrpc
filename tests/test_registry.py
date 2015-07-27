@@ -167,7 +167,11 @@ def test_dispatch_keyword_args():
             })
     fake_request = FakeRequest()
     response = registry.dispatch(fake_request)
-    assert response == json.dumps(3)
+    assert response == json.dumps({
+        "jsonrpc": "2.0",
+        "id": "bogus",
+        "result": 3
+    })
 
 
 def test_dispatch_positional_args():
@@ -187,7 +191,11 @@ def test_dispatch_positional_args():
             })
     fake_request = FakeRequest()
     response = registry.dispatch(fake_request)
-    assert response == json.dumps(3)
+    assert response == json.dumps({
+        "jsonrpc": "2.0",
+        "id": "bogus",
+        "result": 3
+    })
 
 
 def test_dispatch_invalid_method():
