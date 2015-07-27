@@ -73,10 +73,13 @@ class Registry(object):
             argument_names = inspect.getargspec(func).args
             defaults = inspect.getargspec(func).defaults
             arguments = self._collect_arguments(argument_names, args, kwargs, defaults)
-            self._check_types(arguments, argtypes)
+
+            argument_types = argtypes.copy()
+            return_type = argument_types.pop(RETURNS_KEY)
+            self._check_types(arguments, argument_types)
 
             result = func(*args, **kwargs)
-            self._check_return_type(result, argtypes[RETURNS_KEY])
+            self._check_return_type(result, return_type)
 
             return result
 
@@ -145,14 +148,14 @@ class Registry(object):
         :param type_declarations: Argument type by name
         :type type_declarations: dict[str, type]
         """
-        if len(argument_names) != len(type_declarations) - 1:
-            raise Exception("Number of function arguments (%s) does not match number of "
-                            "declared types (%s)"
-                            % (len(argument_names), len(type_declarations) - 1))
         if RETURNS_KEY in argument_names:
             raise Exception("'%s' may not be used as an argument name" % (RETURNS_KEY,))
         if RETURNS_KEY not in type_declarations:
             raise Exception("Missing return type declaration")
+        if len(argument_names) != len(type_declarations) - 1:
+            raise Exception("Number of function arguments (%s) does not match number of "
+                            "declared types (%s)"
+                            % (len(argument_names), len(type_declarations) - 1))
         for arg in argument_names:
             if arg not in type_declarations:
                 raise Exception("Argument '%s' does not have a declared type" % (arg,))
