@@ -131,13 +131,6 @@ class Registry(object):
             arguments[name] = value
         return arguments
 
-    @staticmethod
-    def _get_signature(arg_names, arg_types):
-        signature = []
-        for name in arg_names:
-            signature.append((name, arg_types[name]))
-        return signature
-
     def describe(self):
         """ Returns a description of all the functions in the registry.
         :return: Description
