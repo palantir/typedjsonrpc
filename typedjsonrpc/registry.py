@@ -1,7 +1,9 @@
 """This module contains logic for storing and calling jsonrpc methods."""
 import inspect
 import json
+import six
 import wrapt
+
 from typedjsonrpc.errors import InvalidParamsError, InvalidRequestError, MethodNotFoundError, \
     ParseError
 
@@ -28,12 +30,15 @@ class Registry(object):
         msg = self._get_request_message(request)
         self._check_request(msg)
         func = self._name_to_method[msg["method"]]
-        if isinstance(msg["params"], list):
+        if "params" not in msg:
+            result = func()
+        elif isinstance(msg["params"], list):
             result = func(*msg["params"])
         elif isinstance(msg["params"], dict):
             result = func(**msg["params"])
         else:
-            raise InvalidParamsError()
+            raise InvalidParamsError("Given params '%s' are neither a list nor a dict."
+                                     % (msg["params"],))
         if "id" in msg:
             return json.dumps({
                 "jsonrpc": "2.0",
@@ -144,28 +149,33 @@ class Registry(object):
         :rtype: dict[str, object]
         """
         try:
-            msg = json.loads(request.get_data())
+            data = request.get_data()
+            msg = json.loads(data)
         except Exception:
-            raise ParseError()
+            raise ParseError("Could not parse request data '%s'" % (data,))
         return msg
 
     def _check_request(self, msg):
         """Checks that the request json is well-formed.
 
         :param msg: The request's json data
+        :type msg: dict[str, object]
         """
-        if "jsonrpc" not in msg or msg["jsonrpc"] != "2.0":
-            raise InvalidRequestError()
+        if "jsonrpc" not in msg:
+            raise InvalidRequestError("'\"jsonrpc\": \"2.0\"' must be included.")
+        if msg["jsonrpc"] != "2.0":
+            raise InvalidRequestError("'jsonrpc' must be exactly '2.0', but it was '%s'."
+                                      % (msg["jsonrpc"]))
         if "method" not in msg:
-            raise InvalidRequestError()
+            raise InvalidRequestError("No method specified.")
         if "id" in msg:
             if msg["id"] is None:
-                raise InvalidRequestError("id must not be None.")
-            if isinstance(msg["id"], float):
-                raise InvalidRequestError("id must be a string or integer, %s is a float."
-                                          % (msg["id"],))
+                raise InvalidRequestError("typedjsonrpc does not allow id to be None.")
+            if not isinstance(msg["id"], (six.string_types, int)):
+                raise InvalidRequestError("id must be a string or integer; '%s' is of type %s."
+                                          % (msg["id"], type(msg["id"])))
         if msg["method"] not in self._name_to_method:
-            raise MethodNotFoundError()
+            raise MethodNotFoundError("Could not find method '%s'." % msg["method"])
 
     @staticmethod
     def _check_types(arguments, argument_types):
@@ -179,9 +189,9 @@ class Registry(object):
         """
         for name, arg_type in argument_types.items():
             if name not in arguments:
-                raise TypeError("Argument '%s' is missing" % (name,))
+                raise InvalidParamsError("Argument '%s' is missing." % (name,))
             if not isinstance(arguments[name], arg_type):
-                raise TypeError("Value '%s' for argument '%s' is not of expected type %s"
+                raise InvalidParamsError("Value '%s' for argument '%s' is not of expected type %s."
                                 % (arguments[name], name, arg_type))
 
     @staticmethod
