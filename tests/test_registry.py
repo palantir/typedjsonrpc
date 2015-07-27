@@ -61,7 +61,7 @@ def test_method_args():
     def bar(some_text, some_number, *args, **kwargs):
         return some_text + str(some_number) + str(args) + str(kwargs)
     assert bar("Hi", 5, "foo", bla=6, stuff="Test") == "Hi5('foo',){'stuff': 'Test', 'bla': 6}"
-    with pytest.raises(TypeError):
+    with pytest.raises(InvalidParamsError):
         bar("Hi", test=7)
 
 
@@ -219,7 +219,7 @@ def test_dispatch_invalid_method():
 def test_dispatch_invalid_params():
     registry = Registry()
 
-    @registry.method()
+    @registry.method(returns=None)
     def foo():
         pass
 
@@ -240,7 +240,7 @@ def test_dispatch_invalid_params():
 def test_dispatch_invalid_request():
     registry = Registry()
 
-    @registry.method()
+    @registry.method(returns=None)
     def bogus(*args):
         print(args)
 
@@ -304,7 +304,7 @@ def test_dispatch_invalid_json():
 def test_dispatch_id():
     registry = Registry()
 
-    @registry.method()
+    @registry.method(returns=int)
     def foo():
         return 42
 

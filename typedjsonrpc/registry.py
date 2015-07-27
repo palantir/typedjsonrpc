@@ -192,7 +192,7 @@ class Registry(object):
                 raise InvalidParamsError("Argument '%s' is missing." % (name,))
             if not isinstance(arguments[name], arg_type):
                 raise InvalidParamsError("Value '%s' for argument '%s' is not of expected type %s."
-                                % (arguments[name], name, arg_type))
+                                         % (arguments[name], name, arg_type))
 
     @staticmethod
     def _check_type_declaration(argument_names, type_declarations):
