@@ -47,6 +47,32 @@ def test_method_correct_argtypes():
     assert stuff(42, "Answer") == "42Answer"
 
 
+def test_method_args():
+    registry = Registry()
+
+    @registry.method(some_text=str, some_number=int)
+    def foo(some_text, some_number, *args):
+        return some_text + str(some_number) + str(args)
+    assert foo("Hi", 5, 6, "Test") == "Hi5(6, 'Test')"
+
+    @registry.method(some_text=str, some_number=int)
+    def bar(some_text, some_number, *args, **kwargs):
+        return some_text + str(some_number) + str(args) + str(kwargs)
+    assert bar("Hi", 5, "foo", bla=6, stuff="Test") == "Hi5('foo',){'stuff': 'Test', 'bla': 6}"
+    with pytest.raises(TypeError):
+        bar("Hi", test=7)
+
+
+def test_method_defaults():
+    registry = Registry()
+
+    @registry.method(some_number=int, some_text=str)
+    def foo(some_number, some_text="Test"):
+        return some_text
+    assert foo(5) == "Test"
+    assert foo(5, "Hello") == "Hello"
+
+
 def test_method_wrong_type_declarations():
     registry = Registry()
 

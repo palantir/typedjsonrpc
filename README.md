@@ -57,6 +57,13 @@ You can use any of the basic json types:
 |array     | list        |
 |object    | dict        |
 
+Your functions may also accept `*args` and `**kwargs`, but you cannot declare their types. So the correct way to use these would be:
+```
+@registry.method(a=str)
+def foo(a, *args, **kwargs):
+    return a + str(args) + str(kwargs)
+```
+
 To check that everything is running properly, try (assuming `add` is declared in your main module):
 ```
 $ curl -XPOST http://localhost:3031/api -d '{"jsonrpc": "2.0", "method":"__main__.add","params": {"a": 5, "b": 7}, "id": "foo"}'
