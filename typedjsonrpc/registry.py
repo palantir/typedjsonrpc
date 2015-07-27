@@ -192,7 +192,10 @@ class Registry(object):
 
     @staticmethod
     def _get_signature(arg_names, arg_types):
-        signature = []
+        argument_types = []
         for name in arg_names:
-            signature.append((name, arg_types[name]))
-        return signature
+            argument_types.append((name, arg_types[name]))
+        return {
+            "returns": arg_types[RETURNS_KEY],
+            "argument_types": argument_types
+        }

@@ -19,6 +19,7 @@ class MethodInfo(object):
         return {
             "name": self._name,
             "params": self._get_parameters(),
+            "returns": self._get_return_type(),
             "docstring": self._method.__doc__
         }
 
@@ -32,5 +33,9 @@ class MethodInfo(object):
     def _get_parameters(self):
         if self._signature is not None:
             return [{"name": p_name, "type": p_type}
-                    for (p_name, p_type) in self._signature]
+                    for (p_name, p_type) in self._signature["argument_types"]]
         return None
+
+    def _get_return_type(self):
+        if self._signature is not None:
+            return self._signature["returns"]

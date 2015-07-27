@@ -154,6 +154,7 @@ def test_describe():
     foo_desc = {'params': [{'type': int, 'name': 'x'},
                            {'type': str, 'name': 'y'}],
                 'name': 'test_registry.foo',
+                'returns': str,
                 'docstring': None}
     assert(registry.describe()["functions"] == [foo_desc])
 
@@ -164,6 +165,7 @@ def test_describe():
     bar_desc = {'params': [{'type': int, 'name': 'a'},
                            {'type': int, 'name': 'b'}],
                 'name': 'test_registry.bar',
+                'returns': int,
                 'docstring': 'This is a test.'}
     functions = registry.describe()["functions"]
     assert(bar_desc in functions)
