@@ -1,6 +1,7 @@
 import json
 import pytest
 
+from typedjsonrpc.errors import InvalidRequestError, MethodNotFoundError
 from typedjsonrpc.registry import Registry
 
 
@@ -210,5 +211,48 @@ def test_dispatch_invalid_method():
                 "id": "bogus",
             })
     fake_request = FakeRequest()
-    with pytest.raises(Exception):
+    with pytest.raises(MethodNotFoundError):
         registry.dispatch(fake_request)
+
+
+def test_dispatch_invalid_request():
+    registry = Registry()
+
+    @registry.method()
+    def bogus(*args):
+        print(args)
+
+    class FakeRequest(object):
+        request = None
+
+        def __init__(self, json_object):
+            self.request = json.dumps(json_object)
+
+        def get_data(self):
+            return self.request
+
+    fake_request1 = FakeRequest({
+        "jsonrpc": "1.0",
+        "method": "test_registry.bogus",
+        "params": [1, 2],
+    })
+
+    fake_request2 = FakeRequest({
+        "jsonrpc": "2.0",
+        "params": [1, 2],
+        "id": "test",
+    })
+
+    fake_request3 = FakeRequest({
+        "jsonrpc": "2.0",
+        "method": "test_registry.bogus",
+        "params": [1, 2],
+        "id": 1.0,
+    })
+
+    with pytest.raises(InvalidRequestError):
+        registry.dispatch(fake_request1)
+    with pytest.raises(InvalidRequestError):
+        registry.dispatch(fake_request2)
+    with pytest.raises(InvalidRequestError):
+        registry.dispatch(fake_request3)

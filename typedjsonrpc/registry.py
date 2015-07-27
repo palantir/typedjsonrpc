@@ -2,6 +2,8 @@
 import inspect
 import json
 import wrapt
+from typedjsonrpc.errors import InvalidParamsError, InvalidRequestError, MethodNotFoundError, \
+    ParseError
 
 __all__ = ["Registry"]
 
@@ -23,19 +25,21 @@ class Registry(object):
         :returns: json output of the corresponding function
         :rtype: str
         """
-        msg = json.loads(request.get_data())
+        msg = self._get_request_message(request)
+        self._check_request(msg)
         func = self._name_to_method[msg["method"]]
         if isinstance(msg["params"], list):
             result = func(*msg["params"])
         elif isinstance(msg["params"], dict):
             result = func(**msg["params"])
         else:
-            raise Exception("Invalid params type")
-        return json.dumps({
-            "jsonrpc": "2.0",
-            "id": msg["id"],
-            "result": result
-        })
+            raise InvalidParamsError()
+        if "id" in msg:
+            return json.dumps({
+                "jsonrpc": "2.0",
+                "id": msg["id"],
+                "result": result
+            })
 
     def register(self, name, method):
         """Registers a method with a given name.
@@ -62,8 +66,10 @@ class Registry(object):
         @wrapt.decorator
         def type_check_wrapper(func, instance, args, kwargs):
             """ Wraps a function so that it is type-checked.
+
             :param func: The function to wrap
             :type func: (T) -> U
+
             :return: The original function wrapped into a type-checker
             :rtype: (T) -> U
             """
@@ -85,8 +91,10 @@ class Registry(object):
 
         def register_function(func):
             """ Registers a method with its fully qualified name.
+
             :param func: The function to register
             :type func: (T) -> U
+
             :return: The original function wrapped into a type-checker
             :rtype: (T) -> U
             """
@@ -126,10 +134,46 @@ class Registry(object):
         return arguments
 
     @staticmethod
+    def _get_request_message(request):
+        """Parses the request as a json message.
+
+        :param request: a werkzeug request with json data
+        :type request: werkzeug.wrappers.Request
+
+        :return: The parsed json object
+        :rtype: dict[str, object]
+        """
+        try:
+            msg = json.loads(request.get_data())
+        except Exception:
+            raise ParseError()
+        return msg
+
+    def _check_request(self, msg):
+        """Checks that the request json is well-formed.
+
+        :param msg: The request's json data
+        """
+        if "jsonrpc" not in msg or msg["jsonrpc"] != "2.0":
+            raise InvalidRequestError()
+        if "method" not in msg:
+            raise InvalidRequestError()
+        if "id" in msg:
+            if msg["id"] is None:
+                raise InvalidRequestError("id must not be None.")
+            if isinstance(msg["id"], float):
+                raise InvalidRequestError("id must be a string or integer, %s is a float."
+                                          % (msg["id"],))
+        if msg["method"] not in self._name_to_method:
+            raise MethodNotFoundError()
+
+    @staticmethod
     def _check_types(arguments, argument_types):
         """ Checks that the given arguments have the correct types.
+
         :param arguments: List of (name, value) pairs of the given arguments
         :type arguments: list[(str, object)]
+
         :param argument_types: Argument type by name.
         :type argument_types: dict[str,type]
         """
@@ -143,8 +187,10 @@ class Registry(object):
     @staticmethod
     def _check_type_declaration(argument_names, type_declarations):
         """ Checks that exactly the given argument names have declared types.
+
         :param argument_names: The names of the arguments in the function declaration
         :type argument_names: list[str]
+
         :param type_declarations: Argument type by name
         :type type_declarations: dict[str, type]
         """
