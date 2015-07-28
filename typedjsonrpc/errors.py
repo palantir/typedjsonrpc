@@ -8,7 +8,7 @@ class Error(Exception):
     data = None
 
     def __init__(self, data=None):
-        super(Error, self).__init__()
+        super(Error, self).__init__(self.code, self.message, data)
         self.data = data
 
     def as_error_object(self):
