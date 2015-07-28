@@ -4,8 +4,8 @@ import json
 import six
 import wrapt
 
-from typedjsonrpc.errors import InvalidParamsError, InvalidRequestError, MethodNotFoundError, \
-    ParseError
+from typedjsonrpc.errors import (InvalidParamsError, InvalidRequestError, MethodNotFoundError,
+                                 ParseError)
 
 __all__ = ["Registry"]
 

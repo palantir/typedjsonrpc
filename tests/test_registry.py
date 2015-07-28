@@ -1,8 +1,8 @@
 import json
 import pytest
 
-from typedjsonrpc.errors import InvalidParamsError, InvalidRequestError, MethodNotFoundError, \
-    ParseError
+from typedjsonrpc.errors import (InvalidParamsError, InvalidRequestError, MethodNotFoundError,
+                                 ParseError)
 from typedjsonrpc.registry import Registry
 
 
