@@ -151,14 +151,14 @@ def test_describe():
     @registry.method(returns=str, x=int, y=str)
     def foo(x, y):
         return str(x) + y
-    foo_desc = {'params': [{'type': int, 'name': 'x'},
-                           {'type': str, 'name': 'y'}],
+    foo_desc = {'params': [{'type': 'int', 'name': 'x'},
+                           {'type': 'str', 'name': 'y'}],
                 'name': 'test_registry.foo',
-                'returns': str,
+                'returns': 'str',
                 'description': None}
     describe_desc = {'params': [],
                      'name': 'rpc.describe',
-                     'returns': dict,
+                     'returns': 'dict',
                      'description': registry.describe.__doc__}
     assert registry.describe()["methods"] == [describe_desc, foo_desc]
 
@@ -168,10 +168,10 @@ def test_describe():
     def bar(a, b):
         return a + b
     bar.__doc__ = docstring
-    bar_desc = {'params': [{'type': int, 'name': 'a'},
-                           {'type': int, 'name': 'b'}],
+    bar_desc = {'params': [{'type': 'int', 'name': 'a'},
+                           {'type': 'int', 'name': 'b'}],
                 'name': 'test_registry.bar',
-                'returns': int,
+                'returns': 'int',
                 'description': docstring}
     assert registry.describe()["methods"] == [describe_desc, bar_desc, foo_desc]
 

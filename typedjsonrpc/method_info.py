@@ -29,10 +29,13 @@ class MethodInfo(namedtuple("MethodInfo", ["name", "method", "signature"])):
 
     def _get_parameters(self):
         if self.signature is not None:
-            return [{"name": p_name, "type": p_type}
+            return [{"name": p_name, "type": p_type.__name__}
                     for (p_name, p_type) in self.signature["argument_types"]]
         return None
 
     def _get_return_type(self):
         if self.signature is not None:
-            return self.signature["returns"]
+            return_type = self.signature["returns"]
+            none_type = type(None)
+            if return_type is not None and return_type is not none_type:
+                return return_type.__name__
