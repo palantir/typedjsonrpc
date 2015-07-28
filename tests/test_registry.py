@@ -155,8 +155,12 @@ def test_describe():
                            {'type': str, 'name': 'y'}],
                 'name': 'test_registry.foo',
                 'returns': str,
-                'docstring': None}
-    assert(registry.describe()["functions"] == [foo_desc])
+                'description': None}
+    describe_desc = {'params': [],
+                     'name': 'rpc.describe',
+                     'returns': dict,
+                     'description': registry.describe.__doc__}
+    assert registry.describe()["methods"] == [describe_desc, foo_desc]
 
     docstring = "This is a test."
 
@@ -168,11 +172,8 @@ def test_describe():
                            {'type': int, 'name': 'b'}],
                 'name': 'test_registry.bar',
                 'returns': int,
-                'docstring': docstring}
-    functions = registry.describe()["functions"]
-    assert(bar_desc in functions)
-    assert(foo_desc in functions)
-    assert(len(functions) == 2)
+                'description': docstring}
+    assert registry.describe()["methods"] == [describe_desc, bar_desc, foo_desc]
 
 
 def test_dispatch_keyword_args():

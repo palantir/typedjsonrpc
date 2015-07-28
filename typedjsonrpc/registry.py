@@ -15,6 +15,7 @@ class Registry(object):
 
     def __init__(self):
         self._name_to_method_info = {}
+        self.register("rpc.describe", self.describe, self._get_signature([], {"returns": dict}))
 
     def dispatch(self, request):
         """Takes a request and dispatches its data to a jsonrpc method.
@@ -136,8 +137,8 @@ class Registry(object):
         :return: Description
         """
         return {
-            "functions": [method_info.describe()
-                          for method_info in self._name_to_method_info.values()]
+            "methods": [method_info.describe()
+                        for method_info in sorted(self._name_to_method_info.values())]
         }
 
     @staticmethod
@@ -192,10 +193,7 @@ class Registry(object):
 
     @staticmethod
     def _get_signature(arg_names, arg_types):
-        argument_types = []
-        for name in arg_names:
-            argument_types.append((name, arg_types[name]))
         return {
             "returns": arg_types[RETURNS_KEY],
-            "argument_types": argument_types
+            "argument_types": [(name, arg_types[name]) for name in arg_names]
         }
