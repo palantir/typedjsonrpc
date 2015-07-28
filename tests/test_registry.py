@@ -1,8 +1,8 @@
 import json
 import pytest
 
-from typedjsonrpc.errors import (InvalidParamsError, InvalidRequestError, MethodNotFoundError,
-                                 ParseError)
+from typedjsonrpc.errors import (InvalidParamsError, InvalidReturnTypeError, InvalidRequestError,
+                                 MethodNotFoundError, ParseError)
 from typedjsonrpc.registry import Registry
 
 
@@ -101,7 +101,7 @@ def test_method_wrong_return_type():
     @registry.method(returns=str, some_number=int)
     def foo(some_number):
         return some_number
-    with pytest.raises(TypeError):
+    with pytest.raises(InvalidReturnTypeError):
         foo(5)
 
 
@@ -130,13 +130,13 @@ def test_method_return_type_none():
     @registry.method(returns=type(None), some_text=str)
     def bar(some_text):
         return some_text
-    with pytest.raises(TypeError):
+    with pytest.raises(InvalidReturnTypeError):
         bar("Hello")
 
     @registry.method(returns=None, some_number=int)
     def stuff(some_number):
         return 2 * some_number
-    with pytest.raises(TypeError):
+    with pytest.raises(InvalidReturnTypeError):
         stuff(21)
 
 
@@ -366,8 +366,8 @@ def test_dispatch_id():
         "id": 4.0
     })
 
-    assert(registry.dispatch(fake_request0) is None)
-    assert(json.loads(registry.dispatch(fake_request1))["result"] == 42)
+    assert registry.dispatch(fake_request0) is None
+    assert json.loads(registry.dispatch(fake_request1))["result"] == 42
     with pytest.raises(InvalidRequestError):
         registry.dispatch(fake_request2)
     with pytest.raises(InvalidRequestError):

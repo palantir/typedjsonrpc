@@ -4,8 +4,8 @@ import json
 import six
 import wrapt
 
-from typedjsonrpc.errors import (InvalidParamsError, InvalidRequestError, MethodNotFoundError,
-                                 ParseError)
+from typedjsonrpc.errors import (InvalidParamsError, InvalidReturnTypeError, InvalidRequestError,
+                                 MethodNotFoundError, ParseError)
 
 __all__ = ["Registry"]
 
@@ -228,7 +228,8 @@ class Registry(object):
         """
         if expected_type is None:
             if value is not None:
-                raise TypeError("Returned value is '%s' but None was expected" % (value,))
+                raise InvalidReturnTypeError("Returned value is '%s' but None was expected"
+                                             % (value,))
         elif not isinstance(value, expected_type):
-            raise TypeError("Type of return value '%s' does not match expected type %s"
-                            % (value, expected_type))
+            raise InvalidReturnTypeError("Type of return value '%s' does not match expected type %s"
+                                         % (value, expected_type))

@@ -54,3 +54,9 @@ class ServerError(Error):
     """Something else went wrong."""
     code = -32000
     message = "Server error"
+
+
+class InvalidReturnTypeError(Error):
+    """Return type does not match expected type."""
+    code = -32001
+    message = "Invalid return type"
