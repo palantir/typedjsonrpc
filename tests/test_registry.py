@@ -158,15 +158,17 @@ def test_describe():
                 'docstring': None}
     assert(registry.describe()["functions"] == [foo_desc])
 
+    docstring = "This is a test."
+
     @registry.method(returns=int, a=int, b=int)
     def bar(a, b):
-        """This is a test."""
         return a + b
+    bar.__doc__ = docstring
     bar_desc = {'params': [{'type': int, 'name': 'a'},
                            {'type': int, 'name': 'b'}],
                 'name': 'test_registry.bar',
                 'returns': int,
-                'docstring': 'This is a test.'}
+                'docstring': docstring}
     functions = registry.describe()["functions"]
     assert(bar_desc in functions)
     assert(foo_desc in functions)
