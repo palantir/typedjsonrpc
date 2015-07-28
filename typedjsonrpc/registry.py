@@ -148,8 +148,8 @@ class Registry(object):
         :return: The parsed json object
         :rtype: dict[str, object]
         """
+        data = request.get_data()
         try:
-            data = request.get_data()
             msg = json.loads(data)
         except Exception:
             raise ParseError("Could not parse request data '%s'" % (data,))
@@ -164,18 +164,20 @@ class Registry(object):
         if "jsonrpc" not in msg:
             raise InvalidRequestError("'\"jsonrpc\": \"2.0\"' must be included.")
         if msg["jsonrpc"] != "2.0":
-            raise InvalidRequestError("'jsonrpc' must be exactly '2.0', but it was '%s'."
-                                      % (msg["jsonrpc"]))
+            raise InvalidRequestError("'jsonrpc' must be exactly the string '2.0', but it was '%s'."
+                                      % (msg["jsonrpc"],))
         if "method" not in msg:
             raise InvalidRequestError("No method specified.")
         if "id" in msg:
             if msg["id"] is None:
                 raise InvalidRequestError("typedjsonrpc does not allow id to be None.")
+            if isinstance(msg["id"], float):
+                raise InvalidRequestError("typedjsonrpc does not support float ids.")
             if not isinstance(msg["id"], (six.string_types, int)):
                 raise InvalidRequestError("id must be a string or integer; '%s' is of type %s."
                                           % (msg["id"], type(msg["id"])))
         if msg["method"] not in self._name_to_method:
-            raise MethodNotFoundError("Could not find method '%s'." % msg["method"])
+            raise MethodNotFoundError("Could not find method '%s'." % (msg["method"],))
 
     @staticmethod
     def _check_types(arguments, argument_types):

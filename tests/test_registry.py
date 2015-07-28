@@ -237,7 +237,7 @@ def test_dispatch_invalid_params():
         registry.dispatch(fake_request)
 
 
-def test_dispatch_invalid_request():
+def test_dispatch_invalid_request_wrong_jsonrpc():
     registry = Registry()
 
     @registry.method(returns=None)
@@ -245,54 +245,78 @@ def test_dispatch_invalid_request():
         print(args)
 
     class FakeRequest(object):
-        request = None
-
-        def __init__(self, json_object):
-            self.request = json.dumps(json_object)
-
         def get_data(self):
-            return self.request
+            return json.dumps({
+                "jsonrpc": "1.0",
+                "method": "test_registry.bogus",
+                "params": [1, 2],
+            })
 
-    fake_request1 = FakeRequest({
-        "jsonrpc": "1.0",
-        "method": "test_registry.bogus",
-        "params": [1, 2],
-    })
-
-    fake_request2 = FakeRequest({
-        "jsonrpc": "2.0",
-        "params": [1, 2],
-        "id": "test",
-    })
-
-    fake_request3 = FakeRequest({
-        "jsonrpc": "2.0",
-        "method": "test_registry.bogus",
-        "params": [1, 2],
-        "id": 1.0,
-    })
-
-    fake_request4 = FakeRequest({
-        "method": "test_registry.bogus",
-        "params": [1, 2],
-    })
-
+    fake_request = FakeRequest()
     with pytest.raises(InvalidRequestError):
-        registry.dispatch(fake_request1)
+        registry.dispatch(fake_request)
+
+
+def test_dispatch_invalid_request_no_method():
+    registry = Registry()
+
+    class FakeRequest(object):
+        def get_data(self):
+            return json.dumps({
+                "jsonrpc": "2.0",
+                "params": [1, 2],
+                "id": "test",
+            })
+
+    fake_request = FakeRequest()
     with pytest.raises(InvalidRequestError):
-        registry.dispatch(fake_request2)
+        registry.dispatch(fake_request)
+
+
+def test_dispatch_invalid_request_float_id():
+    registry = Registry()
+
+    @registry.method(returns=None)
+    def bogus(*args):
+        print(args)
+
+    class FakeRequest(object):
+        def get_data(self):
+            return json.dumps({
+                "jsonrpc": "2.0",
+                "method": "test_registry.bogus",
+                "params": [1, 2],
+                "id": 1.0,
+            })
+
+    fake_request = FakeRequest()
     with pytest.raises(InvalidRequestError):
-        registry.dispatch(fake_request3)
+        registry.dispatch(fake_request)
+
+
+def test_dispatch_invalid_request_no_jsonrpc():
+    registry = Registry()
+
+    @registry.method(returns=None)
+    def bogus(*args):
+        print(args)
+
+    class FakeRequest(object):
+        def get_data(self):
+            return json.dumps({
+                "method": "test_registry.bogus",
+                "params": [1, 2],
+            })
+
+    fake_request = FakeRequest()
     with pytest.raises(InvalidRequestError):
-        registry.dispatch(fake_request4)
+        registry.dispatch(fake_request)
 
 
 def test_dispatch_invalid_json():
     registry = Registry()
 
     class FakeRequest(object):
-        request = None
-
         def get_data(self):
             return '{ "jsonrpc": "2.0", "method":, "id":]'
 
