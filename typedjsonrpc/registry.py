@@ -37,8 +37,8 @@ class Registry(object):
         elif isinstance(msg["params"], dict):
             result = func(**msg["params"])
         else:
-            raise InvalidParamsError("Given params '%s' are neither a list nor a dict."
-                                     % (msg["params"],))
+            raise InvalidRequestError("Given params '%s' are neither a list nor a dict."
+                                      % (msg["params"],))
         if "id" in msg:
             return json.dumps({
                 "jsonrpc": "2.0",

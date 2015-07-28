@@ -233,7 +233,7 @@ def test_dispatch_invalid_params():
             })
 
     fake_request = FakeRequest()
-    with pytest.raises(InvalidParamsError):
+    with pytest.raises(InvalidRequestError):
         registry.dispatch(fake_request)
 
 
