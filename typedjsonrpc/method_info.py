@@ -20,13 +20,6 @@ class MethodInfo(namedtuple("MethodInfo", ["name", "method", "signature"])):
             "description": self.method.__doc__
         }
 
-    def get_method(self):
-        """Returns the method.
-        :return: The method
-        :rtype: function
-        """
-        return self.method
-
     def _get_parameters(self):
         if self.signature is not None:
             return [{"name": p_name, "type": p_type.__name__}

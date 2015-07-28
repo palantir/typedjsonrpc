@@ -27,7 +27,7 @@ class Registry(object):
         :rtype: str
         """
         msg = json.loads(request.get_data())
-        func = self._name_to_method_info[msg["method"]].get_method()
+        func = self._name_to_method_info[msg["method"]].method
         if isinstance(msg["params"], list):
             result = func(*msg["params"])
         elif isinstance(msg["params"], dict):
