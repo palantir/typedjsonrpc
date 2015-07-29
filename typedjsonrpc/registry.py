@@ -2,6 +2,8 @@
 import inspect
 import json
 import six
+import sys
+import traceback
 import wrapt
 
 from typedjsonrpc.errors import (Error, InternalError, InvalidParamsError, InvalidReturnTypeError,
@@ -52,7 +54,7 @@ class Registry(object):
         except Exception as exc:  # pylint: disable=broad-except
             if not is_notification:
                 data = exc.__dict__.copy()
-                data["__traceback__"] = exc.__traceback__
+                data["traceback"] = traceback.format_exception(*sys.exc_info())
                 new_error = InternalError(data)
                 msg_id = Registry._get_id_if_known(msg)
                 return Registry._create_error_response(msg_id, new_error)
