@@ -1,6 +1,8 @@
 import json
 import pytest
 
+from typedjsonrpc.errors import (InvalidParamsError, InvalidReturnTypeError, InvalidRequestError,
+                                 MethodNotFoundError, ParseError)
 from typedjsonrpc.registry import Registry
 
 
@@ -57,7 +59,7 @@ def test_method_args():
     def bar(some_text, some_number, *args, **kwargs):
         return some_text + str(some_number) + str(args) + str(kwargs)
     assert bar("Hi", 5, "foo", bla=6, stuff="Test") == "Hi5('foo',){'stuff': 'Test', 'bla': 6}"
-    with pytest.raises(TypeError):
+    with pytest.raises(InvalidParamsError):
         bar("Hi", test=7)
 
 
@@ -87,7 +89,7 @@ def test_method_wrong_argument_order():
     def foo(some_text, some_number):
         return some_text + str(some_number)
     assert foo("Answer", 42) == "Answer42"
-    with pytest.raises(TypeError):
+    with pytest.raises(InvalidParamsError):
         foo(42, "Answer")
 
 
@@ -97,7 +99,7 @@ def test_method_wrong_return_type():
     @registry.method(returns=str, some_number=int)
     def foo(some_number):
         return some_number
-    with pytest.raises(TypeError):
+    with pytest.raises(InvalidReturnTypeError):
         foo(5)
 
 
@@ -126,13 +128,13 @@ def test_method_return_type_none():
     @registry.method(returns=type(None), some_text=str)
     def bar(some_text):
         return some_text
-    with pytest.raises(TypeError):
+    with pytest.raises(InvalidReturnTypeError):
         bar("Hello")
 
     @registry.method(returns=None, some_number=int)
     def stuff(some_number):
         return 2 * some_number
-    with pytest.raises(TypeError):
+    with pytest.raises(InvalidReturnTypeError):
         stuff(21)
 
 
@@ -143,6 +145,258 @@ def test_method_parameter_named_returns():
         @registry.method(returns=str, some_number=int)
         def foo(some_number, returns):
             return str(some_number) + returns
+
+
+class TestDispatch(object):
+    @staticmethod
+    def _create_fake_request(data):
+        class FakeRequest(object):
+            def get_data(self):
+                return json.dumps(data)
+        return FakeRequest()
+
+    def test_keyword_args(self):
+        registry = Registry()
+
+        def add(x, y):
+            return x + y
+        registry.register("add", add)
+
+        fake_request = self._create_fake_request({
+            "jsonrpc": "2.0",
+            "method": "add",
+            "params": {
+                "x": 1,
+                "y": 2,
+            },
+            "id": "bogus",
+        })
+        response = registry.dispatch(fake_request)
+        assert response == json.dumps({
+            "jsonrpc": "2.0",
+            "id": "bogus",
+            "result": 3
+        })
+
+    def test_positional_args(self):
+        registry = Registry()
+
+        def add(x, y):
+            return x + y
+        registry.register("add", add)
+
+        fake_request = self._create_fake_request({
+            "jsonrpc": "2.0",
+            "method": "add",
+            "params": [1, 2],
+            "id": "bogus",
+        })
+        response = registry.dispatch(fake_request)
+        assert response == json.dumps({
+            "jsonrpc": "2.0",
+            "id": "bogus",
+            "result": 3
+        })
+
+    def test_invalid_method(self):
+        registry = Registry()
+
+        fake_request = self._create_fake_request({
+            "jsonrpc": "2.0",
+            "method": "bogus",
+            "params": [1, 2],
+            "id": "bogus",
+        })
+        with pytest.raises(MethodNotFoundError):
+            registry.dispatch(fake_request)
+
+    def test_invalid_params(self):
+        registry = Registry()
+
+        @registry.method(returns=None)
+        def foo():
+            pass
+
+        fake_request = self._create_fake_request({
+            "jsonrpc": "2.0",
+            "method": "test_registry.foo",
+            "params": "Hello world",
+            "id": 42,
+        })
+        with pytest.raises(InvalidRequestError):
+            registry.dispatch(fake_request)
+
+    def test_invalid_request_wrong_jsonrpc(self):
+        registry = Registry()
+
+        @registry.method(returns=None)
+        def bogus(*args):
+            print(args)
+
+        fake_request = self._create_fake_request({
+            "jsonrpc": "1.0",
+            "method": "test_registry.bogus",
+            "params": [1, 2],
+        })
+        with pytest.raises(InvalidRequestError):
+            registry.dispatch(fake_request)
+
+    def test_invalid_request_no_method(self):
+        registry = Registry()
+
+        fake_request = self._create_fake_request({
+            "jsonrpc": "2.0",
+            "params": [1, 2],
+            "id": "test",
+        })
+        with pytest.raises(InvalidRequestError):
+            registry.dispatch(fake_request)
+
+    def test_invalid_request_float_id(self):
+        registry = Registry()
+
+        @registry.method(returns=None)
+        def bogus(*args):
+            print(args)
+
+        fake_request = self._create_fake_request({
+            "jsonrpc": "2.0",
+            "method": "test_registry.bogus",
+            "params": [1, 2],
+            "id": 1.0,
+        })
+        with pytest.raises(InvalidRequestError):
+            registry.dispatch(fake_request)
+
+    def test_invalid_request_no_jsonrpc(self):
+        registry = Registry()
+
+        @registry.method(returns=None)
+        def bogus(*args):
+            print(args)
+
+        fake_request = self._create_fake_request({
+            "method": "test_registry.bogus",
+            "params": [1, 2],
+        })
+        with pytest.raises(InvalidRequestError):
+            registry.dispatch(fake_request)
+
+    def test_invalid_json(self):
+        registry = Registry()
+
+        class FakeRequest(object):
+            def get_data(self):
+                return '{ "jsonrpc": "2.0", "method":, "id":]'
+
+        fake_request = FakeRequest()
+        with pytest.raises(ParseError):
+            registry.dispatch(fake_request)
+
+    def test_id(self):
+        registry = Registry()
+
+        @registry.method(returns=int)
+        def foo():
+            return 42
+
+        fake_request0 = self._create_fake_request({
+            "jsonrpc": "2.0",
+            "method": "test_registry.foo",
+        })
+        fake_request1 = self._create_fake_request({
+            "jsonrpc": "2.0",
+            "method": "test_registry.foo",
+            "id": 1
+        })
+        fake_request2 = self._create_fake_request({
+            "jsonrpc": "2.0",
+            "method": "test_registry.foo",
+            "id": None
+        })
+        fake_request3 = self._create_fake_request({
+            "jsonrpc": "2.0",
+            "method": "test_registry.foo",
+            "id": [1, 2, 3]
+        })
+        fake_request4 = self._create_fake_request({
+            "jsonrpc": "2.0",
+            "method": "test_registry.foo",
+            "id": 4.0
+        })
+
+        assert registry.dispatch(fake_request0) is None
+        assert json.loads(registry.dispatch(fake_request1))["result"] == 42
+        with pytest.raises(InvalidRequestError):
+            registry.dispatch(fake_request2)
+        with pytest.raises(InvalidRequestError):
+            registry.dispatch(fake_request3)
+        with pytest.raises(InvalidRequestError):
+            registry.dispatch(fake_request4)
+
+
+class TestValidateParams(object):
+    def test_list(self):
+        def foo(a, b, c="baz"):
+            pass
+
+        with pytest.raises(InvalidParamsError):
+            Registry._validate_params_match(foo, ["foo"])
+        Registry._validate_params_match(foo, ["foo", "bar"])
+
+        with pytest.raises(InvalidParamsError):
+            Registry._validate_params_match(foo, ["foo", "bar", "bop", 42])
+
+    def test_varargs(self):
+        def foo(a, b="foo", *varargs):
+            pass
+
+        with pytest.raises(InvalidParamsError):
+            Registry._validate_params_match(foo, [])
+        Registry._validate_params_match(foo, ["foo", "bar"])
+        Registry._validate_params_match(foo, ["foo", "bar", 42])
+
+    def test_dict(self):
+        def foo(a, b, c="baz"):
+            pass
+
+        with pytest.raises(InvalidParamsError):
+            Registry._validate_params_match(foo, {"a": "foo"})
+        Registry._validate_params_match(foo, {"a": "foo", "b": "bar"})
+
+        with pytest.raises(InvalidParamsError):
+            Registry._validate_params_match(foo, {"a": "foo", "b": "bar", "c": "bop", "d": 42})
+
+        with pytest.raises(InvalidParamsError):
+            Registry._validate_params_match(foo, {"a": "foo", "c": "bar"})
+
+    def test_kwargs(self):
+        def foo(a, b, c="baz", **kwargs):
+            pass
+
+        with pytest.raises(InvalidParamsError):
+            Registry._validate_params_match(foo, {"a": "foo"})
+        Registry._validate_params_match(foo, {"a": "foo", "b": "bar"})
+
+        Registry._validate_params_match(foo, {"a": "foo", "b": "bar", "d": 42})
+
+        with pytest.raises(InvalidParamsError):
+            Registry._validate_params_match(foo, {"a": "foo", "c": "bar"})
+
+    def test_no_defaults(self):
+        def foo(a):
+            pass
+        with pytest.raises(InvalidParamsError):
+            Registry._validate_params_match(foo, [])
+        Registry._validate_params_match(foo, ["bar"])
+        with pytest.raises(InvalidParamsError):
+            Registry._validate_params_match(foo, ["bar", "baz"])
+
+        with pytest.raises(InvalidParamsError):
+            Registry._validate_params_match(foo, {})
+        Registry._validate_params_match(foo, {"a": "bar"})
+        with pytest.raises(InvalidParamsError):
+            Registry._validate_params_match(foo, {"a": "bar", "b": "baz"})
 
 
 def test_describe():
@@ -174,70 +428,3 @@ def test_describe():
                 'returns': 'int',
                 'description': docstring}
     assert registry.describe()["methods"] == [describe_desc, bar_desc, foo_desc]
-
-
-def test_dispatch_keyword_args():
-    registry = Registry()
-
-    def add(x, y):
-        return x + y
-    registry.register("add", add)
-
-    class FakeRequest(object):
-        def get_data(self):
-            return json.dumps({
-                "jsonrpc": "2.0",
-                "method": "add",
-                "params": {
-                    "x": 1,
-                    "y": 2,
-                },
-                "id": "bogus",
-            })
-    fake_request = FakeRequest()
-    response = registry.dispatch(fake_request)
-    assert response == json.dumps({
-        "jsonrpc": "2.0",
-        "id": "bogus",
-        "result": 3
-    })
-
-
-def test_dispatch_positional_args():
-    registry = Registry()
-
-    def add(x, y):
-        return x + y
-    registry.register("add", add)
-
-    class FakeRequest(object):
-        def get_data(self):
-            return json.dumps({
-                "jsonrpc": "2.0",
-                "method": "add",
-                "params": [1, 2],
-                "id": "bogus",
-            })
-    fake_request = FakeRequest()
-    response = registry.dispatch(fake_request)
-    assert response == json.dumps({
-        "jsonrpc": "2.0",
-        "id": "bogus",
-        "result": 3
-    })
-
-
-def test_dispatch_invalid_method():
-    registry = Registry()
-
-    class FakeRequest(object):
-        def get_data(self):
-            return json.dumps({
-                "jsonrpc": "2.0",
-                "method": "bogus",
-                "params": [1, 2],
-                "id": "bogus",
-            })
-    fake_request = FakeRequest()
-    with pytest.raises(Exception):
-        registry.dispatch(fake_request)

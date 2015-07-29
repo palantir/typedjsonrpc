@@ -1,8 +1,11 @@
 """This module contains logic for storing and calling jsonrpc methods."""
 import inspect
 import json
+import six
 import wrapt
 
+from typedjsonrpc.errors import (InvalidParamsError, InvalidReturnTypeError, InvalidRequestError,
+                                 MethodNotFoundError, ParseError)
 from typedjsonrpc.method_info import MethodInfo
 
 __all__ = ["Registry"]
@@ -26,19 +29,24 @@ class Registry(object):
         :returns: json output of the corresponding function
         :rtype: str
         """
-        msg = json.loads(request.get_data())
+        msg = self._get_request_message(request)
+        self._check_request(msg)
         func = self._name_to_method_info[msg["method"]].method
-        if isinstance(msg["params"], list):
-            result = func(*msg["params"])
-        elif isinstance(msg["params"], dict):
-            result = func(**msg["params"])
+        params = msg.get("params", [])
+        Registry._validate_params_match(func, params)
+        if isinstance(params, list):
+            result = func(*params)
+        elif isinstance(params, dict):
+            result = func(**params)
         else:
-            raise Exception("Invalid params type")
-        return json.dumps({
-            "jsonrpc": "2.0",
-            "id": msg["id"],
-            "result": result
-        })
+            raise InvalidRequestError("Given params '%s' are neither a list nor a dict."
+                                      % (msg["params"],))
+        if "id" in msg:
+            return json.dumps({
+                "jsonrpc": "2.0",
+                "id": msg["id"],
+                "result": result
+            })
 
     def register(self, name, method, signature=None):
         """Registers a method with a given name and signature.
@@ -68,8 +76,10 @@ class Registry(object):
         @wrapt.decorator
         def type_check_wrapper(func, instance, args, kwargs):
             """ Wraps a function so that it is type-checked.
+
             :param func: The function to wrap
             :type func: (T) -> U
+
             :return: The original function wrapped into a type-checker
             :rtype: (T) -> U
             """
@@ -91,8 +101,10 @@ class Registry(object):
 
         def register_function(func):
             """ Registers a method with its fully qualified name.
+
             :param func: The function to register
             :type func: (T) -> U
+
             :return: The original function wrapped into a type-checker
             :rtype: (T) -> U
             """
@@ -142,25 +154,92 @@ class Registry(object):
         }
 
     @staticmethod
+    def _get_request_message(request):
+        """Parses the request as a json message.
+
+        :param request: a werkzeug request with json data
+        :type request: werkzeug.wrappers.Request
+
+        :return: The parsed json object
+        :rtype: dict[str, object]
+        """
+        data = request.get_data()
+        try:
+            msg = json.loads(data)
+        except Exception:
+            raise ParseError("Could not parse request data '%s'" % (data,))
+        return msg
+
+    def _check_request(self, msg):
+        """Checks that the request json is well-formed.
+
+        :param msg: The request's json data
+        :type msg: dict[str, object]
+        """
+        if "jsonrpc" not in msg:
+            raise InvalidRequestError("'\"jsonrpc\": \"2.0\"' must be included.")
+        if msg["jsonrpc"] != "2.0":
+            raise InvalidRequestError("'jsonrpc' must be exactly the string '2.0', but it was '%s'."
+                                      % (msg["jsonrpc"],))
+        if "method" not in msg:
+            raise InvalidRequestError("No method specified.")
+        if "id" in msg:
+            if msg["id"] is None:
+                raise InvalidRequestError("typedjsonrpc does not allow id to be None.")
+            if isinstance(msg["id"], float):
+                raise InvalidRequestError("typedjsonrpc does not support float ids.")
+            if not isinstance(msg["id"], (six.string_types, int)):
+                raise InvalidRequestError("id must be a string or integer; '%s' is of type %s."
+                                          % (msg["id"], type(msg["id"])))
+        if msg["method"] not in self._name_to_method_info:
+            raise MethodNotFoundError("Could not find method '%s'." % (msg["method"],))
+
+    @staticmethod
+    def _validate_params_match(func, params):
+        argspec = inspect.getargspec(func)
+        default_length = len(argspec.defaults) if argspec.defaults is not None else 0
+        if isinstance(params, list):
+            if len(params) > len(argspec.args) and argspec.varargs is None:
+                raise InvalidParamsError("Too many arguments")
+
+            remaining_args = len(argspec.args) - len(params)
+            if remaining_args > default_length:
+                raise InvalidParamsError("Not enough arguments")
+        elif isinstance(params, dict):
+            missing_args = [key for key in argspec.args if key not in params]
+            default_args = set(argspec.args[len(argspec.args) - default_length:])
+            for key in missing_args:
+                if key not in default_args:
+                    raise InvalidParamsError("Argument %s has not been satisfied" % (key,))
+
+            extra_params = [key for key in params if key not in argspec.args]
+            if len(extra_params) > 0 and argspec.keywords is None:
+                raise InvalidParamsError("Too many arguments")
+
+    @staticmethod
     def _check_types(arguments, argument_types):
         """ Checks that the given arguments have the correct types.
+
         :param arguments: List of (name, value) pairs of the given arguments
         :type arguments: list[(str, object)]
+
         :param argument_types: Argument type by name.
         :type argument_types: dict[str,type]
         """
         for name, arg_type in argument_types.items():
             if name not in arguments:
-                raise TypeError("Argument '%s' is missing" % (name,))
+                raise InvalidParamsError("Argument '%s' is missing." % (name,))
             if not isinstance(arguments[name], arg_type):
-                raise TypeError("Value '%s' for argument '%s' is not of expected type %s"
-                                % (arguments[name], name, arg_type))
+                raise InvalidParamsError("Value '%s' for argument '%s' is not of expected type %s."
+                                         % (arguments[name], name, arg_type))
 
     @staticmethod
     def _check_type_declaration(argument_names, type_declarations):
         """ Checks that exactly the given argument names have declared types.
+
         :param argument_names: The names of the arguments in the function declaration
         :type argument_names: list[str]
+
         :param type_declarations: Argument type by name
         :type type_declarations: dict[str, type]
         """
@@ -186,10 +265,11 @@ class Registry(object):
         """
         if expected_type is None:
             if value is not None:
-                raise TypeError("Returned value is '%s' but None was expected" % (value,))
+                raise InvalidReturnTypeError("Returned value is '%s' but None was expected"
+                                             % (value,))
         elif not isinstance(value, expected_type):
-            raise TypeError("Type of return value '%s' does not match expected type %s"
-                            % (value, expected_type))
+            raise InvalidReturnTypeError("Type of return value '%s' does not match expected type %s"
+                                         % (value, expected_type))
 
     @staticmethod
     def _get_signature(arg_names, arg_types):
