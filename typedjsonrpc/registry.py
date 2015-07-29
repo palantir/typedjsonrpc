@@ -191,7 +191,7 @@ class Registry(object):
             if not isinstance(msg["id"], (six.string_types, int)):
                 raise InvalidRequestError("id must be a string or integer; '%s' is of type %s."
                                           % (msg["id"], type(msg["id"])))
-        if msg["method"] not in self._name_to_method:
+        if msg["method"] not in self._name_to_method_info:
             raise MethodNotFoundError("Could not find method '%s'." % (msg["method"],))
 
     @staticmethod
