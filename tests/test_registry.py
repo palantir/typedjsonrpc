@@ -10,8 +10,7 @@ def test_register():
     def foo(x):
         return x
     registry.register("bar", foo)
-    assert "bar" in registry._name_to_method
-    assert registry._name_to_method["bar"] == foo
+    assert registry._name_to_method_info["bar"].method == foo
 
 
 def test_method():
@@ -21,8 +20,7 @@ def test_method():
     def foo(x):
         return x
     expected_name = "{}.{}".format(foo.__module__, foo.__name__)
-    assert expected_name in registry._name_to_method
-    assert registry._name_to_method[expected_name] == foo
+    assert registry._name_to_method_info[expected_name].method == foo
 
 
 def test_method_correct_argtypes():
@@ -145,6 +143,37 @@ def test_method_parameter_named_returns():
         @registry.method(returns=str, some_number=int)
         def foo(some_number, returns):
             return str(some_number) + returns
+
+
+def test_describe():
+    registry = Registry()
+
+    @registry.method(returns=str, x=int, y=str)
+    def foo(x, y):
+        return str(x) + y
+    foo_desc = {'params': [{'type': 'int', 'name': 'x'},
+                           {'type': 'str', 'name': 'y'}],
+                'name': 'test_registry.foo',
+                'returns': 'str',
+                'description': None}
+    describe_desc = {'params': [],
+                     'name': 'rpc.describe',
+                     'returns': 'dict',
+                     'description': registry.describe.__doc__}
+    assert registry.describe()["methods"] == [describe_desc, foo_desc]
+
+    docstring = "This is a test."
+
+    @registry.method(returns=int, a=int, b=int)
+    def bar(a, b):
+        return a + b
+    bar.__doc__ = docstring
+    bar_desc = {'params': [{'type': 'int', 'name': 'a'},
+                           {'type': 'int', 'name': 'b'}],
+                'name': 'test_registry.bar',
+                'returns': 'int',
+                'description': docstring}
+    assert registry.describe()["methods"] == [describe_desc, bar_desc, foo_desc]
 
 
 def test_dispatch_keyword_args():
