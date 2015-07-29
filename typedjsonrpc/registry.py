@@ -30,12 +30,12 @@ class Registry(object):
         msg = self._get_request_message(request)
         self._check_request(msg)
         func = self._name_to_method[msg["method"]]
-        if "params" not in msg:
-            result = func()
-        elif isinstance(msg["params"], list):
-            result = func(*msg["params"])
-        elif isinstance(msg["params"], dict):
-            result = func(**msg["params"])
+        params = msg.get("params", [])
+        Registry._validate_params_match(func, params)
+        if isinstance(params, list):
+            result = func(*params)
+        elif isinstance(params, dict):
+            result = func(**params)
         else:
             raise InvalidRequestError("Given params '%s' are neither a list nor a dict."
                                       % (msg["params"],))
@@ -178,6 +178,28 @@ class Registry(object):
                                           % (msg["id"], type(msg["id"])))
         if msg["method"] not in self._name_to_method:
             raise MethodNotFoundError("Could not find method '%s'." % (msg["method"],))
+
+    @staticmethod
+    def _validate_params_match(func, params):
+        argspec = inspect.getargspec(func)
+        default_length = len(argspec.defaults) if argspec.defaults is not None else 0
+        if isinstance(params, list):
+            if len(params) > len(argspec.args) and argspec.varargs is None:
+                raise InvalidParamsError("Too many arguments")
+
+            remaining_args = len(argspec.args) - len(params)
+            if remaining_args > default_length:
+                raise InvalidParamsError("Not enough arguments")
+        elif isinstance(params, dict):
+            missing_args = [key for key in argspec.args if key not in params]
+            default_args = set(argspec.args[len(argspec.args) - default_length:])
+            for key in missing_args:
+                if key not in default_args:
+                    raise InvalidParamsError("Argument %s has not been satisfied" % (key,))
+
+            extra_params = [key for key in params if key not in argspec.args]
+            if len(extra_params) > 0 and argspec.keywords is None:
+                raise InvalidParamsError("Too many arguments")
 
     @staticmethod
     def _check_types(arguments, argument_types):

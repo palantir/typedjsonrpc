@@ -335,3 +335,67 @@ class TestDispatch(object):
             registry.dispatch(fake_request3)
         with pytest.raises(InvalidRequestError):
             registry.dispatch(fake_request4)
+
+
+class TestValidateParams(object):
+    def test_list(self):
+        def foo(a, b, c="baz"):
+            pass
+
+        with pytest.raises(InvalidParamsError):
+            Registry._validate_params_match(foo, ["foo"])
+        Registry._validate_params_match(foo, ["foo", "bar"])
+
+        with pytest.raises(InvalidParamsError):
+            Registry._validate_params_match(foo, ["foo", "bar", "bop", 42])
+
+    def test_varargs(self):
+        def foo(a, b="foo", *varargs):
+            pass
+
+        with pytest.raises(InvalidParamsError):
+            Registry._validate_params_match(foo, [])
+        Registry._validate_params_match(foo, ["foo", "bar"])
+        Registry._validate_params_match(foo, ["foo", "bar", 42])
+
+    def test_dict(self):
+        def foo(a, b, c="baz"):
+            pass
+
+        with pytest.raises(InvalidParamsError):
+            Registry._validate_params_match(foo, {"a": "foo"})
+        Registry._validate_params_match(foo, {"a": "foo", "b": "bar"})
+
+        with pytest.raises(InvalidParamsError):
+            Registry._validate_params_match(foo, {"a": "foo", "b": "bar", "c": "bop", "d": 42})
+
+        with pytest.raises(InvalidParamsError):
+            Registry._validate_params_match(foo, {"a": "foo", "c": "bar"})
+
+    def test_kwargs(self):
+        def foo(a, b, c="baz", **kwargs):
+            pass
+
+        with pytest.raises(InvalidParamsError):
+            Registry._validate_params_match(foo, {"a": "foo"})
+        Registry._validate_params_match(foo, {"a": "foo", "b": "bar"})
+
+        Registry._validate_params_match(foo, {"a": "foo", "b": "bar", "d": 42})
+
+        with pytest.raises(InvalidParamsError):
+            Registry._validate_params_match(foo, {"a": "foo", "c": "bar"})
+
+    def test_no_defaults(self):
+        def foo(a):
+            pass
+        with pytest.raises(InvalidParamsError):
+            Registry._validate_params_match(foo, [])
+        Registry._validate_params_match(foo, ["bar"])
+        with pytest.raises(InvalidParamsError):
+            Registry._validate_params_match(foo, ["bar", "baz"])
+
+        with pytest.raises(InvalidParamsError):
+            Registry._validate_params_match(foo, {})
+        Registry._validate_params_match(foo, {"a": "bar"})
+        with pytest.raises(InvalidParamsError):
+            Registry._validate_params_match(foo, {"a": "bar", "b": "baz"})
