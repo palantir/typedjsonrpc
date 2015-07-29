@@ -4,8 +4,8 @@ import json
 import six
 import wrapt
 
-from typedjsonrpc.errors import (InvalidParamsError, InvalidReturnTypeError, InvalidRequestError,
-                                 MethodNotFoundError, ParseError)
+from typedjsonrpc.errors import (Error, InternalError, InvalidParamsError, InvalidReturnTypeError,
+                                 InvalidRequestError, MethodNotFoundError, ParseError)
 from typedjsonrpc.method_info import MethodInfo
 
 __all__ = ["Registry"]
@@ -30,7 +30,7 @@ class Registry(object):
         :rtype: str
         """
         messages = self._get_request_messages(request)
-        result = [self._dispatch_message(message) for message in messages]
+        result = [self._dispatch_and_handle_errors(message) for message in messages]
         non_notification_result = [x for x in result if x is not None]
         if len(non_notification_result) == 0:
             return
@@ -38,6 +38,22 @@ class Registry(object):
             return json.dumps(non_notification_result[0])
         else:
             return json.dumps(non_notification_result)
+
+    def _dispatch_and_handle_errors(self, msg):
+        is_notification = "id" not in msg
+        try:
+            result = self._dispatch_message(msg)
+            if not is_notification:
+                return Registry._create_result_response(msg["id"], result)
+        except Error as exc:
+            if not is_notification:
+                return Registry._create_error_response(msg["id"], exc)
+        except Exception as exc:  # pylint: disable=broad-except
+            if not is_notification:
+                data = exc.__dict__.copy()
+                data["__traceback__"] = exc.__traceback__
+                new_error = InternalError(data)
+                return Registry._create_error_response(msg["id"], new_error)
 
     def _dispatch_message(self, msg):
         self._check_request(msg)
@@ -51,12 +67,27 @@ class Registry(object):
         else:
             raise InvalidRequestError("Given params '%s' are neither a list nor a dict."
                                       % (msg["params"],))
-        if "id" in msg:
-            return {
-                "jsonrpc": "2.0",
-                "id": msg["id"],
-                "result": result
-            }
+        return result
+
+    @staticmethod
+    def _create_result_response(msg_id, result):
+        return {
+            "jsonrpc": "2.0",
+            "id": msg_id,
+            "result": result,
+        }
+
+    @staticmethod
+    def _create_error_response(msg_id, exc):
+        """
+        :type exc: typedjsonrpc.errors.Error
+        :rtype: dict
+        """
+        return {
+            "jsonrpc": "2.0",
+            "id": msg_id,
+            "error": exc.as_error_object(),
+        }
 
     def register(self, name, method, signature=None):
         """Registers a method with a given name and signature.
