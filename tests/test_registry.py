@@ -386,6 +386,28 @@ class TestDispatch(object):
         result = registry.dispatch(fake_request)
         TestDispatch.assert_error(result, 4.0, InvalidRequestError)
 
+    def test_error_unknown_id(self):
+        registry = Registry()
+
+        @registry.method(returns=int)
+        def foo():
+            return 42
+
+        fake_request = self._create_fake_request(["foo"])
+        result = registry.dispatch(fake_request)
+        TestDispatch.assert_error(result, None, InvalidRequestError)
+
+    def test_error_in_function_unknown_id(self):
+        registry = Registry()
+
+        @registry.method(returns=int)
+        def foo():
+            raise Exception()
+
+        fake_request = self._create_fake_request(["foo"])
+        result = registry.dispatch(fake_request)
+        TestDispatch.assert_error(result, None, InvalidRequestError)
+
     def test_batched_input(self):
         registry = Registry()
 
@@ -469,6 +491,79 @@ class TestDispatch(object):
         other_response = response_by_id[2]
         assert sorted(other_response.keys()) == ["error", "id", "jsonrpc"]
         TestDispatch.assert_error(other_response, 2, InvalidParamsError)
+
+    def test_batched_input_one_notification(self):
+        registry = Registry()
+
+        @registry.method(returns=int, x=int, y=int)
+        def add(x, y):
+            return x + y
+
+        json_data = [{
+            "jsonrpc": "2.0",
+            "method": "test_registry.add",
+            "params": {
+                "x": 1,
+                "y": 2,
+            },
+            "id": 1,
+        }, {
+            "jsonrpc": "2.0",
+            "method": "test_registry.add",
+            "params": {
+                "x": 2,
+                "y": 2,
+            },
+        }]
+
+        fake_request = self._create_fake_request(json_data)
+        json_response = registry.dispatch(fake_request)
+        response = json.loads(json_response)
+        expected_response_by_id = {
+            1: {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "result": 3
+            }
+        }
+        response_by_id = {msg["id"]: msg for msg in response}
+        assert len(response) == 1
+        assert response_by_id == expected_response_by_id
+
+    def test_batched_input_all_notifications(self):
+        registry = Registry()
+
+        @registry.method(returns=int, x=int, y=int)
+        def add(x, y):
+            return x + y
+
+        json_data = [{
+            "jsonrpc": "2.0",
+            "method": "test_registry.add",
+            "params": {
+                "x": 1,
+                "y": 2,
+            },
+        }, {
+            "jsonrpc": "2.0",
+            "method": "test_registry.add",
+            "params": {
+                "x": 2,
+                "y": 2,
+            },
+        }]
+        fake_request = self._create_fake_request(json_data)
+        assert registry.dispatch(fake_request) is None
+
+    def test_batched_input_empty_array(self):
+        registry = Registry()
+
+        @registry.method(returns=int, x=int, y=int)
+        def add(x, y):
+            return x + y
+
+        fake_request = self._create_fake_request([])
+        assert registry.dispatch(fake_request) is None
 
 
 class TestValidateParams(object):

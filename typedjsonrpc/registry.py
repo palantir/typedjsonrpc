@@ -40,20 +40,29 @@ class Registry(object):
             return json.dumps(non_notification_result)
 
     def _dispatch_and_handle_errors(self, msg):
-        is_notification = "id" not in msg
+        is_notification = isinstance(msg, dict) and "id" not in msg
         try:
             result = self._dispatch_message(msg)
             if not is_notification:
                 return Registry._create_result_response(msg["id"], result)
         except Error as exc:
             if not is_notification:
-                return Registry._create_error_response(msg["id"], exc)
+                msg_id = Registry._get_id_if_known(msg)
+                return Registry._create_error_response(msg_id, exc)
         except Exception as exc:  # pylint: disable=broad-except
             if not is_notification:
                 data = exc.__dict__.copy()
                 data["__traceback__"] = exc.__traceback__
                 new_error = InternalError(data)
-                return Registry._create_error_response(msg["id"], new_error)
+                msg_id = Registry._get_id_if_known(msg)
+                return Registry._create_error_response(msg_id, new_error)
+
+    @staticmethod
+    def _get_id_if_known(msg):
+        if isinstance(msg, dict) and "id" in msg:
+            return msg["id"]
+        else:
+            return None
 
     def _dispatch_message(self, msg):
         self._check_request(msg)
