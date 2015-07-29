@@ -29,7 +29,17 @@ class Registry(object):
         :returns: json output of the corresponding function
         :rtype: str
         """
-        msg = self._get_request_message(request)
+        messages = self._get_request_messages(request)
+        result = [self._dispatch_message(message) for message in messages]
+        non_notification_result = [x for x in result if x is not None]
+        if len(non_notification_result) == 0:
+            return
+        elif len(messages) == 1:
+            return json.dumps(non_notification_result[0])
+        else:
+            return json.dumps(non_notification_result)
+
+    def _dispatch_message(self, msg):
         self._check_request(msg)
         func = self._name_to_method_info[msg["method"]].method
         params = msg.get("params", [])
@@ -42,11 +52,11 @@ class Registry(object):
             raise InvalidRequestError("Given params '%s' are neither a list nor a dict."
                                       % (msg["params"],))
         if "id" in msg:
-            return json.dumps({
+            return {
                 "jsonrpc": "2.0",
                 "id": msg["id"],
                 "result": result
-            })
+            }
 
     def register(self, name, method, signature=None):
         """Registers a method with a given name and signature.
@@ -154,7 +164,7 @@ class Registry(object):
         }
 
     @staticmethod
-    def _get_request_message(request):
+    def _get_request_messages(request):
         """Parses the request as a json message.
 
         :param request: a werkzeug request with json data
@@ -168,7 +178,10 @@ class Registry(object):
             msg = json.loads(data)
         except Exception:
             raise ParseError("Could not parse request data '%s'" % (data,))
-        return msg
+        if isinstance(msg, list):
+            return msg
+        else:
+            return [msg]
 
     def _check_request(self, msg):
         """Checks that the request json is well-formed.

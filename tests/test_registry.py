@@ -334,6 +334,50 @@ class TestDispatch(object):
         with pytest.raises(InvalidRequestError):
             registry.dispatch(fake_request4)
 
+    def test_batched_input(self):
+        registry = Registry()
+
+        @registry.method(returns=int, x=int, y=int)
+        def add(x, y):
+            return x + y
+
+        json_data = [{
+            "jsonrpc": "2.0",
+            "method": "test_registry.add",
+            "params": {
+                "x": 1,
+                "y": 2,
+            },
+            "id": 1,
+        }, {
+            "jsonrpc": "2.0",
+            "method": "test_registry.add",
+            "params": {
+                "x": 2,
+                "y": 2,
+            },
+            "id": 2,
+        }]
+
+        fake_request = self._create_fake_request(json_data)
+        json_response = registry.dispatch(fake_request)
+        response = json.loads(json_response)
+        expected_response_by_id = {
+            1: {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "result": 3
+            },
+            2: {
+                "jsonrpc": "2.0",
+                "id": 2,
+                "result": 4
+            }
+        }
+        response_by_id = {msg["id"]: msg for msg in response}
+        assert len(response) == len(json_data)
+        assert response_by_id == expected_response_by_id
+
 
 class TestValidateParams(object):
     def test_list(self):
