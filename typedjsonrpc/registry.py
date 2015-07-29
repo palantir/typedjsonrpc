@@ -6,6 +6,7 @@ import wrapt
 
 from typedjsonrpc.errors import (InvalidParamsError, InvalidReturnTypeError, InvalidRequestError,
                                  MethodNotFoundError, ParseError)
+from typedjsonrpc.method_info import MethodInfo
 
 __all__ = ["Registry"]
 
@@ -16,7 +17,8 @@ class Registry(object):
     """The registry for storing and calling jsonrpc methods."""
 
     def __init__(self):
-        self._name_to_method = {}
+        self._name_to_method_info = {}
+        self.register("rpc.describe", self.describe, self._get_signature([], {"returns": dict}))
 
     def dispatch(self, request):
         """Takes a request and dispatches its data to a jsonrpc method.
@@ -29,7 +31,7 @@ class Registry(object):
         """
         msg = self._get_request_message(request)
         self._check_request(msg)
-        func = self._name_to_method[msg["method"]]
+        func = self._name_to_method_info[msg["method"]].method
         params = msg.get("params", [])
         Registry._validate_params_match(func, params)
         if isinstance(params, list):
@@ -46,14 +48,17 @@ class Registry(object):
                 "result": result
             })
 
-    def register(self, name, method):
-        """Registers a method with a given name.
+    def register(self, name, method, signature=None):
+        """Registers a method with a given name and signature.
+
         :param name: The name to register
         :type name: str
         :param method: The function to call
         :type method: function
+        :param signature: List of the argument names and types
+        :type signature: list[str, type]
         """
-        self._name_to_method[name] = method
+        self._name_to_method_info[name] = MethodInfo(name, method, signature)
 
     def method(self, **argtypes):
         """ Syntactic sugar for registering a method
@@ -103,12 +108,13 @@ class Registry(object):
             :return: The original function wrapped into a type-checker
             :rtype: (T) -> U
             """
-            self._check_type_declaration(inspect.getargspec(func).args, argtypes)
+            arg_names = inspect.getargspec(func).args
+            self._check_type_declaration(arg_names, argtypes)
 
             wrapped_function = type_check_wrapper(func, None, None, None)
             fully_qualified_name = "{}.{}".format(func.__module__, func.__name__)
-            self._name_to_method[fully_qualified_name] = wrapped_function
-
+            self.register(fully_qualified_name, wrapped_function,
+                          self._get_signature(arg_names, argtypes))
             return wrapped_function
 
         return register_function
@@ -137,6 +143,15 @@ class Registry(object):
         for name, value in kwargs.items():
             arguments[name] = value
         return arguments
+
+    def describe(self):
+        """ Returns a description of all the functions in the registry.
+        :return: Description
+        """
+        return {
+            "methods": [method_info.describe()
+                        for method_info in sorted(self._name_to_method_info.values())]
+        }
 
     @staticmethod
     def _get_request_message(request):
@@ -255,3 +270,10 @@ class Registry(object):
         elif not isinstance(value, expected_type):
             raise InvalidReturnTypeError("Type of return value '%s' does not match expected type %s"
                                          % (value, expected_type))
+
+    @staticmethod
+    def _get_signature(arg_names, arg_types):
+        return {
+            "returns": arg_types[RETURNS_KEY],
+            "argument_types": [(name, arg_types[name]) for name in arg_names]
+        }
