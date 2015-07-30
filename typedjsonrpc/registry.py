@@ -90,10 +90,6 @@ class Registry(object):
 
     @staticmethod
     def _create_error_response(msg_id, exc):
-        """
-        :type exc: typedjsonrpc.errors.Error
-        :rtype: dict
-        """
         return {
             "jsonrpc": "2.0",
             "id": msg_id,
