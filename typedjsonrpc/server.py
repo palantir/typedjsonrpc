@@ -34,10 +34,15 @@ class Server(object):
         adapter = self._url_map.bind_to_environ(request.environ)
         endpoint, _ = adapter.match()
         if endpoint == self._endpoint:
-            json_output = self._registry.dispatch(request)
-            return Response(json_output, mimetype="application/json")
+            return self._dispatch_jsonrpc_request(request)
         else:
             abort(500)
+
+    def _dispatch_jsonrpc_request(self, request):
+        json_output = self._registry.dispatch(request)
+        if json_output is None:
+            return Response()
+        return Response(json_output, mimetype="application/json")
 
     def wsgi_app(self, environ, start_response):
         """A basic WSGI app"""

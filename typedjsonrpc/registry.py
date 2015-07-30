@@ -31,15 +31,27 @@ class Registry(object):
         :returns: json output of the corresponding function
         :rtype: str
         """
-        messages = self._get_request_messages(request)
-        result = [self._dispatch_and_handle_errors(message) for message in messages]
-        non_notification_result = [x for x in result if x is not None]
-        if len(non_notification_result) == 0:
-            return
-        elif len(messages) == 1:
-            return json.dumps(non_notification_result[0])
-        else:
-            return json.dumps(non_notification_result)
+        try:
+            messages = self._get_request_messages(request)
+            result = [self._dispatch_and_handle_errors(message) for message in messages]
+            print(result)
+            non_notification_result = [x for x in result if x is not None]
+            print(non_notification_result)
+            if len(non_notification_result) == 0:
+                return
+            elif len(messages) == 1:
+                return json.dumps(non_notification_result[0])
+            else:
+                return json.dumps(non_notification_result)
+        except Error as exc:
+            print(traceback.format_exception(*sys.exc_info()))
+            return json.dumps(Registry._create_error_response(None, exc))
+        except Exception as exc:  # pylint: disable=broad-except
+            print(traceback.format_exception(*sys.exc_info()))
+            data = exc.__dict__.copy()
+            data["traceback"] = traceback.format_exception(*sys.exc_info())
+            new_error = InternalError(data)
+            return json.dumps(Registry._create_error_response(None, new_error))
 
     def _dispatch_and_handle_errors(self, msg):
         is_notification = isinstance(msg, dict) and "id" not in msg
