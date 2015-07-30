@@ -52,7 +52,7 @@ class InternalError(Error):
     message = "Internal error"
 
     @staticmethod
-    def from_error(exc):
+    def from_error(exc, debug_url=None):
         """Wraps another Exception in an InternalError.
         :param exc:
         :type exc: Exception
@@ -61,6 +61,8 @@ class InternalError(Error):
         """
         data = exc.__dict__.copy()
         data["traceback"] = "".join(traceback.format_exception(*sys.exc_info()))
+        if debug_url is not None:
+            data["debug_url"] = debug_url
         return InternalError(data)
 
 
