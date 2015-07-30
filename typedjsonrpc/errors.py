@@ -60,7 +60,7 @@ class InternalError(Error):
         :rtype: InternalError
         """
         data = exc.__dict__.copy()
-        data["traceback"] = traceback.format_exception(*sys.exc_info())
+        data["traceback"] = "".join(traceback.format_exception(*sys.exc_info()))
         return InternalError(data)
 
 
