@@ -2,8 +2,6 @@
 import inspect
 import json
 import six
-import sys
-import traceback
 import wrapt
 
 from typedjsonrpc.errors import (Error, InternalError, InvalidParamsError, InvalidReturnTypeError,
@@ -31,44 +29,39 @@ class Registry(object):
         :returns: json output of the corresponding function
         :rtype: str
         """
-        try:
+        def _wrapped():
             messages = self._get_request_messages(request)
             result = [self._dispatch_and_handle_errors(message) for message in messages]
-            print(result)
             non_notification_result = [x for x in result if x is not None]
-            print(non_notification_result)
             if len(non_notification_result) == 0:
                 return
             elif len(messages) == 1:
                 return json.dumps(non_notification_result[0])
             else:
                 return json.dumps(non_notification_result)
-        except Error as exc:
-            print(traceback.format_exception(*sys.exc_info()))
-            return json.dumps(Registry._create_error_response(None, exc))
-        except Exception as exc:  # pylint: disable=broad-except
-            print(traceback.format_exception(*sys.exc_info()))
-            data = exc.__dict__.copy()
-            data["traceback"] = traceback.format_exception(*sys.exc_info())
-            new_error = InternalError(data)
-            return json.dumps(Registry._create_error_response(None, new_error))
+
+        return Registry._handle_exceptions(_wrapped)
 
     def _dispatch_and_handle_errors(self, msg):
         is_notification = isinstance(msg, dict) and "id" not in msg
-        try:
+
+        def _wrapped():
             result = self._dispatch_message(msg)
             if not is_notification:
                 return Registry._create_result_response(msg["id"], result)
+
+        return Registry._handle_exceptions(_wrapped, is_notification, self._get_id_if_known(msg))
+
+    @staticmethod
+    def _handle_exceptions(func, is_notification=False, msg_id=None):
+        try:
+            return func()
         except Error as exc:
             if not is_notification:
-                msg_id = Registry._get_id_if_known(msg)
                 return Registry._create_error_response(msg_id, exc)
         except Exception as exc:  # pylint: disable=broad-except
             if not is_notification:
-                data = exc.__dict__.copy()
-                data["traceback"] = traceback.format_exception(*sys.exc_info())
-                new_error = InternalError(data)
-                msg_id = Registry._get_id_if_known(msg)
+                new_error = InternalError.from_error(exc)
                 return Registry._create_error_response(msg_id, new_error)
 
     @staticmethod
