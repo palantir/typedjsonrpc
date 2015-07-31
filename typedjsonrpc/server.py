@@ -59,6 +59,7 @@ class Server(object):
 
     def run(self, host, port, **options):
         """For debugging purposes, you can run this as a standalone server"""
+        self.registry.debug = True
         debugged = DebuggedJsonRpcApplication(self, evalex=True)
         run_simple(host, port, debugged, use_reloader=True, **options)
 

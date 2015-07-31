@@ -24,7 +24,7 @@ class Registry(object):
     def __init__(self, debug=False):
         self._name_to_method_info = {}
         self.register("rpc.describe", self.describe, self._get_signature([], {"returns": dict}))
-        self._debug = debug
+        self.debug = debug
         self.tracebacks = {}
 
     def dispatch(self, request):
@@ -66,13 +66,13 @@ class Registry(object):
             return func()
         except Error as exc:
             if not is_notification:
-                if self._debug:
+                if self.debug:
                     debug_url = self._store_traceback()
                     exc.data = {"message": exc.data, "debug_url": debug_url}
                 return Registry._create_error_response(msg_id, exc)
         except Exception as exc:  # pylint: disable=broad-except
             if not is_notification:
-                if self._debug:
+                if self.debug:
                     debug_url = self._store_traceback()
                 else:
                     debug_url = None
