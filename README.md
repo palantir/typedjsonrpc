@@ -1,8 +1,7 @@
-# typedjsonrpc 
+# typedjsonrpc
 typedjsonrpc is a typed decorator-based json-rpc library for Python. It is influenced by [Flask JSON-RPC](https://github.com/cenobites/flask-jsonrpc) but has some key differences: 
 
 typedjsonrpc...
-* supports floats
 * allows return type checking
 * focuses on easy debugging
 
@@ -16,7 +15,7 @@ $ pip install .
 ```
 ### Project setup
 To include typedjsonrpc in your project, use:
-```
+```python
 from typedjsonrpc.registry import Registry
 from typedjsonrpc.server import Server
 
@@ -26,7 +25,7 @@ server = Server(registry)
 The registry will keep track of the methods that are available for json-rpc - whenever you annotate a method it will be added to the registry. `Server` is a uwsgi compatible app that handles the requests. It has a development mode that can be run using `server.run(host, port)`.
 ### Example usage
 Annotate your methods to make them accessible and provide type information:
-```
+```python
 @registry.method(returns=int, a=int, b=int)
 def add(a, b):
     return a + b
@@ -36,7 +35,7 @@ def concat(a, b):
     return a + b
 ```
 The return type *has* to be declared using the `returns` keyword. For methods that don't return anything, you can use either `type(None)` or just `None`:
-```
+```python
 @registry.method(returns=type(None), a=str)
 def foo(a):
     print(a)
@@ -58,7 +57,7 @@ You can use any of the basic json types:
 |object    | dict        |
 
 Your functions may also accept `*args` and `**kwargs`, but you cannot declare their types. So the correct way to use these would be:
-```
+```python
 @registry.method(a=str)
 def foo(a, *args, **kwargs):
     return a + str(args) + str(kwargs)
