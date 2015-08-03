@@ -17,11 +17,17 @@ RETURNS_KEY = "returns"
 class Registry(object):
     """The registry for storing and calling jsonrpc methods.
 
+    :attribute debug: Debug option which enables recording of tracebacks
+    :type debug: bool
     :attribute tracebacks: Tracebacks for debugging
     :type tracebacks: dict[int, werkzeug.debug.tbtools.Traceback]
     """
 
     def __init__(self, debug=False):
+        """
+        :param debug: If True, the registry records tracebacks for debugging purposes
+        :type debug: bool
+        """
         self._name_to_method_info = {}
         self._register_describe()
         self.debug = debug
