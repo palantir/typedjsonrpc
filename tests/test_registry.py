@@ -16,6 +16,17 @@ def test_register():
     assert registry._name_to_method_info["bar"].method == foo
 
 
+def test_register_class_method():
+    registry = Registry()
+
+    class Foo(object):
+        def bar(self):
+            pass
+    baz = Foo()
+    with pytest.raises(Exception):
+        registry.register("42", baz.bar)
+
+
 def test_method():
     registry = Registry()
 

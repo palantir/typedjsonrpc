@@ -23,9 +23,17 @@ class Registry(object):
 
     def __init__(self, debug=False):
         self._name_to_method_info = {}
-        self.register("rpc.describe", self.describe, self._get_signature([], {"returns": dict}))
+        self._register_describe()
         self.debug = debug
         self.tracebacks = {}
+
+    def _register_describe(self):
+        def _describe():
+            self.describe()
+        _describe.__doc__ = self.describe.__doc__
+
+        describe_signature = self._get_signature([], {"returns": dict})
+        self.register("rpc.describe", _describe, describe_signature)
 
     def dispatch(self, request):
         """Takes a request and dispatches its data to a jsonrpc method.
@@ -133,6 +141,8 @@ class Registry(object):
         :param signature: List of the argument names and types
         :type signature: list[str, type]
         """
+        if inspect.ismethod(method):
+            raise Exception("typedjsonrpc does not support making class methods into endpoints")
         self._name_to_method_info[name] = MethodInfo(name, method, signature)
 
     def method(self, **argtypes):
