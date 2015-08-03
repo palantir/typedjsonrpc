@@ -35,7 +35,7 @@ class Registry(object):
 
     def _register_describe(self):
         def _describe():
-            self.describe()
+            return self.describe()
         _describe.__doc__ = self.describe.__doc__
 
         describe_signature = self._get_signature([], {"returns": dict})
