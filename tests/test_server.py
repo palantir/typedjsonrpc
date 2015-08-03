@@ -1,4 +1,5 @@
-from typedjsonrpc.server import *
+from typedjsonrpc.registry import Registry
+from typedjsonrpc.server import DebuggedJsonRpcApplication, Server
 from werkzeug.exceptions import HTTPException
 import pytest
 import six
@@ -10,17 +11,25 @@ else:
 
 
 class TestDebuggedJsonRpcApplication(object):
+    @staticmethod
+    def get_app():
+        registry = Registry()
+        server = Server(registry)
+        debugged_app = DebuggedJsonRpcApplication(server)
+        return registry, server, debugged_app
+
     def test_handle_debug(self):
         traceback_id = 5
-        debugged_app = DebuggedJsonRpcApplication(None)
+        registry, server, debugged_app = TestDebuggedJsonRpcApplication.get_app()
 
         def fake_start_response(body, headers):
             pass
 
-        tb = mock.Mock()
+        tb = mock.NonCallableMock()
         fake_output = "foo"
         tb.render_full = mock.Mock(return_value=fake_output)
-        debugged_app.tracebacks[traceback_id] = tb
+        tb.frames = mock.NonCallableMagicMock()
+        registry.tracebacks[traceback_id] = tb
         result = debugged_app.handle_debug({}, fake_start_response, traceback_id)
         tb.render_full.assert_called_once_with(secret=debugged_app.secret,
                                                evalex=debugged_app.evalex)
@@ -28,25 +37,26 @@ class TestDebuggedJsonRpcApplication(object):
 
     def test_handle_debug_start_response_fails(self):
         traceback_id = 8
-        debugged_app = DebuggedJsonRpcApplication(None)
+        registry, server, debugged_app = TestDebuggedJsonRpcApplication.get_app()
 
         def fake_start_response(body, headers):
             raise Exception()
-        tb = mock.Mock()
-        tb.render_full = mock.Mock(side_effect=AssertionError("Should not be called"))
-        debugged_app.tracebacks[traceback_id] = tb
+        tb = mock.NonCallableMock()
+        tb.render_full = mock.Mock()
+        tb.frames = mock.NonCallableMagicMock()
+        registry.tracebacks[traceback_id] = tb
         mock_error_logger = mock.Mock()
         environ = {"wsgi.errors": mock_error_logger}
         debugged_app.handle_debug(environ, fake_start_response, traceback_id)
 
     def test_handle_debug_no_such_traceback(self):
-        debugged_app = DebuggedJsonRpcApplication(None)
+        registry, server, debugged_app = TestDebuggedJsonRpcApplication.get_app()
         with pytest.raises(HTTPException) as excinfo:
             debugged_app.handle_debug(None, None, -1)
         assert excinfo.value.code == 404
 
     def test_debug_application_debug(self):
-        debugged_app = DebuggedJsonRpcApplication(None)
+        registry, server, debugged_app = TestDebuggedJsonRpcApplication.get_app()
         environ = {
             "SERVER_NAME": "localhost",
             "SERVER_PORT": "5060",

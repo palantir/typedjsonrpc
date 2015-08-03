@@ -1,4 +1,6 @@
 """This module defines error classes for typedjsonrpc."""
+import traceback
+import sys
 
 
 class Error(Exception):
@@ -48,6 +50,20 @@ class InternalError(Error):
     """Internal JSON-RPC error."""
     code = -32603
     message = "Internal error"
+
+    @staticmethod
+    def from_error(exc, debug_url=None):
+        """Wraps another Exception in an InternalError.
+        :param exc:
+        :type exc: Exception
+        :return: The wrapped exception
+        :rtype: InternalError
+        """
+        data = exc.__dict__.copy()
+        data["traceback"] = "".join(traceback.format_exception(*sys.exc_info()))
+        if debug_url is not None:
+            data["debug_url"] = debug_url
+        return InternalError(data)
 
 
 class ServerError(Error):

@@ -2,13 +2,12 @@
 import inspect
 import json
 import six
-import sys
-import traceback
 import wrapt
 
 from typedjsonrpc.errors import (Error, InternalError, InvalidParamsError, InvalidReturnTypeError,
                                  InvalidRequestError, MethodNotFoundError, ParseError)
 from typedjsonrpc.method_info import MethodInfo
+from werkzeug.debug.tbtools import get_current_traceback
 
 __all__ = ["Registry"]
 
@@ -16,15 +15,27 @@ RETURNS_KEY = "returns"
 
 
 class Registry(object):
-    """The registry for storing and calling jsonrpc methods."""
+    """The registry for storing and calling jsonrpc methods.
 
-    def __init__(self):
+    :attribute debug: Debug option which enables recording of tracebacks
+    :type debug: bool
+    :attribute tracebacks: Tracebacks for debugging
+    :type tracebacks: dict[int, werkzeug.debug.tbtools.Traceback]
+    """
+
+    def __init__(self, debug=False):
+        """
+        :param debug: If True, the registry records tracebacks for debugging purposes
+        :type debug: bool
+        """
         self._name_to_method_info = {}
         self._register_describe()
+        self.debug = debug
+        self.tracebacks = {}
 
     def _register_describe(self):
         def _describe():
-            self.describe()
+            return self.describe()
         _describe.__doc__ = self.describe.__doc__
 
         describe_signature = self._get_signature([], {"returns": dict})
@@ -39,33 +50,55 @@ class Registry(object):
         :returns: json output of the corresponding function
         :rtype: str
         """
-        messages = self._get_request_messages(request)
-        result = [self._dispatch_and_handle_errors(message) for message in messages]
-        non_notification_result = [x for x in result if x is not None]
-        if len(non_notification_result) == 0:
-            return
-        elif len(messages) == 1:
-            return json.dumps(non_notification_result[0])
-        else:
-            return json.dumps(non_notification_result)
+        def _wrapped():
+            messages = self._get_request_messages(request)
+            result = [self._dispatch_and_handle_errors(message) for message in messages]
+            non_notification_result = [x for x in result if x is not None]
+            if len(non_notification_result) == 0:
+                return
+            elif len(messages) == 1:
+                return non_notification_result[0]
+            else:
+                return non_notification_result
+
+        result = self._handle_exceptions(_wrapped)
+        if result is not None:
+            return json.dumps(result)
 
     def _dispatch_and_handle_errors(self, msg):
         is_notification = isinstance(msg, dict) and "id" not in msg
-        try:
+
+        def _wrapped():
             result = self._dispatch_message(msg)
             if not is_notification:
                 return Registry._create_result_response(msg["id"], result)
+
+        return self._handle_exceptions(_wrapped, is_notification, self._get_id_if_known(msg))
+
+    def _handle_exceptions(self, func, is_notification=False, msg_id=None):
+        try:
+            return func()
         except Error as exc:
             if not is_notification:
-                msg_id = Registry._get_id_if_known(msg)
+                if self.debug:
+                    debug_url = self._store_traceback()
+                    exc.data = {"message": exc.data, "debug_url": debug_url}
                 return Registry._create_error_response(msg_id, exc)
         except Exception as exc:  # pylint: disable=broad-except
             if not is_notification:
-                data = exc.__dict__.copy()
-                data["traceback"] = traceback.format_exception(*sys.exc_info())
-                new_error = InternalError(data)
-                msg_id = Registry._get_id_if_known(msg)
+                if self.debug:
+                    debug_url = self._store_traceback()
+                else:
+                    debug_url = None
+                new_error = InternalError.from_error(exc, debug_url)
                 return Registry._create_error_response(msg_id, new_error)
+
+    def _store_traceback(self):
+        traceback = get_current_traceback(skip=1,
+                                          show_hidden_frames=False,
+                                          ignore_system_exceptions=True)
+        self.tracebacks[traceback.id] = traceback
+        return "/debug/{}".format(traceback.id)
 
     @staticmethod
     def _get_id_if_known(msg):

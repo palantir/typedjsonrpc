@@ -322,8 +322,8 @@ class TestDispatch(object):
                 return '{ "jsonrpc": "2.0", "method":, "id":]'
 
         fake_request = FakeRequest()
-        with pytest.raises(ParseError):
-            registry.dispatch(fake_request)
+        response = registry.dispatch(fake_request)
+        TestDispatch.assert_error(response, None, ParseError)
 
     def test_id_notification(self):
         registry = Registry()

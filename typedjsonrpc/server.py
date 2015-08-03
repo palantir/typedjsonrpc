@@ -17,7 +17,11 @@ DEFAULT_API_ENDPOINT_NAME = "/api"
 
 
 class Server(object):
-    """A basic WSGI-compatible server for typedjsonrpc endpoints."""
+    """A basic WSGI-compatible server for typedjsonrpc endpoints.
+
+    :attribute registry: The registry for this server
+    :type registry: typedjsonrpc.registry.Registry
+    """
 
     def __init__(self, registry, endpoint=DEFAULT_API_ENDPOINT_NAME):
         """
@@ -26,7 +30,7 @@ class Server(object):
         :param endpoint: (optional) The endpoint to publish jsonrpc endpoints. Default "/api".
         :type endpoint: str
         """
-        self._registry = registry
+        self.registry = registry
         self._endpoint = endpoint
         self._url_map = Map([Rule(endpoint, endpoint=self._endpoint)])
 
@@ -34,10 +38,15 @@ class Server(object):
         adapter = self._url_map.bind_to_environ(request.environ)
         endpoint, _ = adapter.match()
         if endpoint == self._endpoint:
-            json_output = self._registry.dispatch(request)
-            return Response(json_output, mimetype="application/json")
+            return self._dispatch_jsonrpc_request(request)
         else:
             abort(500)
+
+    def _dispatch_jsonrpc_request(self, request):
+        json_output = self.registry.dispatch(request)
+        if json_output is None:
+            return Response()
+        return Response(json_output, mimetype="application/json")
 
     def wsgi_app(self, environ, start_response):
         """A basic WSGI app"""
@@ -50,6 +59,7 @@ class Server(object):
 
     def run(self, host, port, **options):
         """For debugging purposes, you can run this as a standalone server"""
+        self.registry.debug = True
         debugged = DebuggedJsonRpcApplication(self, evalex=True)
         run_simple(host, port, debugged, use_reloader=True, **options)
 
@@ -76,7 +86,7 @@ class DebuggedJsonRpcApplication(DebuggedApplication):
     def __init__(self, app, **kwargs):
         """
         :param app: The wsgi application to be debugged
-        :type app: object
+        :type app: typedjsonrpc.server.Server
         :param **kwargs:The arguments to pass to the DebuggedApplication
         """
         super(DebuggedJsonRpcApplication, self).__init__(app, **kwargs)
@@ -127,8 +137,9 @@ class DebuggedJsonRpcApplication(DebuggedApplication):
         :param traceback_id: The id of the traceback to inspect
         :type traceback_id: int
         """
-        if traceback_id not in self.tracebacks:
+        if traceback_id not in self.app.registry.tracebacks:
             abort(404)
+        self._copy_over_traceback(traceback_id)
         traceback = self.tracebacks[traceback_id]
         try:
             start_response('500 INTERNAL SERVER ERROR', [
@@ -149,3 +160,10 @@ class DebuggedJsonRpcApplication(DebuggedApplication):
         else:
             rendered = traceback.render_full(evalex=self.evalex, secret=self.secret)
             return rendered.encode('utf-8', 'replace')
+
+    def _copy_over_traceback(self, traceback_id):
+        if traceback_id not in self.tracebacks:
+            traceback = self.app.registry.tracebacks[traceback_id]
+            self.tracebacks[traceback_id] = traceback
+            for frame in traceback.frames:
+                self.frames[frame.id] = frame
