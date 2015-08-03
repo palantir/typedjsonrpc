@@ -2,10 +2,12 @@
 import inspect
 import json
 import six
+import sys
+import traceback
 import wrapt
 
-from typedjsonrpc.errors import (InvalidParamsError, InvalidReturnTypeError, InvalidRequestError,
-                                 MethodNotFoundError, ParseError)
+from typedjsonrpc.errors import (Error, InternalError, InvalidParamsError, InvalidReturnTypeError,
+                                 InvalidRequestError, MethodNotFoundError, ParseError)
 from typedjsonrpc.method_info import MethodInfo
 
 __all__ = ["Registry"]
@@ -37,7 +39,42 @@ class Registry(object):
         :returns: json output of the corresponding function
         :rtype: str
         """
-        msg = self._get_request_message(request)
+        messages = self._get_request_messages(request)
+        result = [self._dispatch_and_handle_errors(message) for message in messages]
+        non_notification_result = [x for x in result if x is not None]
+        if len(non_notification_result) == 0:
+            return
+        elif len(messages) == 1:
+            return json.dumps(non_notification_result[0])
+        else:
+            return json.dumps(non_notification_result)
+
+    def _dispatch_and_handle_errors(self, msg):
+        is_notification = isinstance(msg, dict) and "id" not in msg
+        try:
+            result = self._dispatch_message(msg)
+            if not is_notification:
+                return Registry._create_result_response(msg["id"], result)
+        except Error as exc:
+            if not is_notification:
+                msg_id = Registry._get_id_if_known(msg)
+                return Registry._create_error_response(msg_id, exc)
+        except Exception as exc:  # pylint: disable=broad-except
+            if not is_notification:
+                data = exc.__dict__.copy()
+                data["traceback"] = traceback.format_exception(*sys.exc_info())
+                new_error = InternalError(data)
+                msg_id = Registry._get_id_if_known(msg)
+                return Registry._create_error_response(msg_id, new_error)
+
+    @staticmethod
+    def _get_id_if_known(msg):
+        if isinstance(msg, dict) and "id" in msg:
+            return msg["id"]
+        else:
+            return None
+
+    def _dispatch_message(self, msg):
         self._check_request(msg)
         func = self._name_to_method_info[msg["method"]].method
         params = msg.get("params", [])
@@ -49,12 +86,23 @@ class Registry(object):
         else:
             raise InvalidRequestError("Given params '%s' are neither a list nor a dict."
                                       % (msg["params"],))
-        if "id" in msg:
-            return json.dumps({
-                "jsonrpc": "2.0",
-                "id": msg["id"],
-                "result": result
-            })
+        return result
+
+    @staticmethod
+    def _create_result_response(msg_id, result):
+        return {
+            "jsonrpc": "2.0",
+            "id": msg_id,
+            "result": result,
+        }
+
+    @staticmethod
+    def _create_error_response(msg_id, exc):
+        return {
+            "jsonrpc": "2.0",
+            "id": msg_id,
+            "error": exc.as_error_object(),
+        }
 
     def register(self, name, method, signature=None):
         """Registers a method with a given name and signature.
@@ -164,7 +212,7 @@ class Registry(object):
         }
 
     @staticmethod
-    def _get_request_message(request):
+    def _get_request_messages(request):
         """Parses the request as a json message.
 
         :param request: a werkzeug request with json data
@@ -178,7 +226,10 @@ class Registry(object):
             msg = json.loads(data)
         except Exception:
             raise ParseError("Could not parse request data '%s'" % (data,))
-        return msg
+        if isinstance(msg, list):
+            return msg
+        else:
+            return [msg]
 
     def _check_request(self, msg):
         """Checks that the request json is well-formed.
