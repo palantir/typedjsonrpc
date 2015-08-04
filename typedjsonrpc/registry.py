@@ -46,8 +46,7 @@ class Registry(object):
 
         :param request: a werkzeug request with json data
         :type request: werkzeug.wrappers.Request
-
-        :returns: json output of the corresponding function
+        :returns: json output of the corresponding method
         :rtype: str
         """
         def _wrapped():
@@ -75,9 +74,9 @@ class Registry(object):
 
         return self._handle_exceptions(_wrapped, is_notification, self._get_id_if_known(msg))
 
-    def _handle_exceptions(self, func, is_notification=False, msg_id=None):
+    def _handle_exceptions(self, method, is_notification=False, msg_id=None):
         try:
-            return func()
+            return method()
         except Error as exc:
             if not is_notification:
                 if self.debug:
@@ -109,13 +108,13 @@ class Registry(object):
 
     def _dispatch_message(self, msg):
         self._check_request(msg)
-        func = self._name_to_method_info[msg["method"]].method
+        method = self._name_to_method_info[msg["method"]].method
         params = msg.get("params", [])
-        Registry._validate_params_match(func, params)
+        Registry._validate_params_match(method, params)
         if isinstance(params, list):
-            result = func(*params)
+            result = method(*params)
         elif isinstance(params, dict):
-            result = func(**params)
+            result = method(**params)
         else:
             raise InvalidRequestError("Given params '%s' are neither a list nor a dict."
                                       % (msg["params"],))
@@ -137,22 +136,22 @@ class Registry(object):
             "error": exc.as_error_object(),
         }
 
-    def register(self, name, method, signature=None):
+    def register(self, name, method, parameter_types=None):
         """Registers a method with a given name and signature.
 
-        :param name: The name to register
+        :param name: The name used to register the method
         :type name: str
-        :param method: The function to call
+        :param method: The method to register
         :type method: function
-        :param signature: List of the argument names and types
-        :type signature: list[str, type]
+        :param parameter_types: List of the parameter names and types
+        :type parameter_types: list[str, type]
         """
         if inspect.ismethod(method):
             raise Exception("typedjsonrpc does not support making class methods into endpoints")
-        self._name_to_method_info[name] = MethodInfo(name, method, signature)
+        self._name_to_method_info[name] = MethodInfo(name, method, parameter_types)
 
-    def method(self, **argtypes):
-        """ Syntactic sugar for registering a method
+    def method(self, **parameter_types):
+        """Syntactic sugar for registering a method
 
         Example:
 
@@ -161,83 +160,84 @@ class Registry(object):
             ... def add(x, y):
             ...     return x + y
 
-        :param argtypes: The types of the function's arguments
-        :type argtypes: dict[str,type]
+        :param parameter_types: The types of the method's parameters
+        :type parameter_types: dict[str,type]
         """
         @wrapt.decorator
-        def type_check_wrapper(func, instance, args, kwargs):
-            """ Wraps a function so that it is type-checked.
+        def type_check_wrapper(method, instance, args, kwargs):
+            """Wraps a method so that it is type-checked.
 
-            :param func: The function to wrap
-            :type func: (T) -> U
-
-            :return: The original function wrapped into a type-checker
-            :rtype: (T) -> U
+            :param method: The method to wrap
+            :type method: (T) -> U
+            :return: The result of calling the method with the given parameters
+            :rtype: U
             """
             if instance is not None:
                 raise Exception("Instance shouldn't be set.")
 
-            argument_names = inspect.getargspec(func).args
-            defaults = inspect.getargspec(func).defaults
-            arguments = self._collect_arguments(argument_names, args, kwargs, defaults)
+            parameter_names = inspect.getargspec(method).args
+            defaults = inspect.getargspec(method).defaults
+            parameters = self._collect_parameters(parameter_names, args, kwargs, defaults)
 
-            argument_types = argtypes.copy()
-            return_type = argument_types.pop(RETURNS_KEY)
-            self._check_types(arguments, argument_types)
+            param_types = parameter_types.copy()
+            return_type = param_types.pop(RETURNS_KEY)
+            self._check_types(parameters, param_types)
 
-            result = func(*args, **kwargs)
+            result = method(*args, **kwargs)
             self._check_return_type(result, return_type)
 
             return result
 
-        def register_function(func):
-            """ Registers a method with its fully qualified name.
+        def register_method(method):
+            """Registers a method with its fully qualified name.
 
-            :param func: The function to register
-            :type func: (T) -> U
-
-            :return: The original function wrapped into a type-checker
+            :param method: The method to register
+            :type method: (T) -> U
+            :return: The original method wrapped into a type-checker
             :rtype: (T) -> U
             """
-            arg_names = inspect.getargspec(func).args
-            self._check_type_declaration(arg_names, argtypes)
+            parameter_names = inspect.getargspec(method).args
+            self._check_type_declaration(parameter_names, parameter_types)
 
-            wrapped_function = type_check_wrapper(func, None, None, None)
-            fully_qualified_name = "{}.{}".format(func.__module__, func.__name__)
-            self.register(fully_qualified_name, wrapped_function,
-                          self._get_signature(arg_names, argtypes))
-            return wrapped_function
+            wrapped_method = type_check_wrapper(method, None, None, None)
+            fully_qualified_name = "{}.{}".format(method.__module__, method.__name__)
+            self.register(fully_qualified_name, wrapped_method,
+                          self._get_signature(parameter_names, parameter_types))
+            return wrapped_method
 
-        return register_function
+        return register_method
 
     @staticmethod
-    def _collect_arguments(argument_names, args, kwargs, defaults):
-        """ Creates a dictionary mapping argument names to their values in the function call.
-        :param argument_names: The function's argument names
-        :type argument_names: list[string]
-        :param args: *args passed into the function
+    def _collect_parameters(parameter_names, args, kwargs, defaults):
+        """Creates a dictionary mapping parameters names to their values in the method call.
+
+        :param parameter_names: The method's parameter names
+        :type parameter_names: list[string]
+        :param args: *args passed into the method
         :type args: list[object]
-        :param kwargs: **kwargs passed into the function
+        :param kwargs: **kwargs passed into the method
         :type kwargs: dict[string, object]
-        :param defaults: The function's default values
+        :param defaults: The method's default values
         :type defaults: list[object]
-        :return: Dictionary mapping argument names to values
+        :return: Dictionary mapping parameter names to values
         :rtype: dict[string, object]
         """
-        arguments = {}
+        parameters = {}
         if defaults is not None:
-            zipped_defaults = zip(reversed(argument_names), reversed(defaults))
+            zipped_defaults = zip(reversed(parameter_names), reversed(defaults))
             for name, default in zipped_defaults:
-                arguments[name] = default
-        for name, value in zip(argument_names, args):
-            arguments[name] = value
+                parameters[name] = default
+        for name, value in zip(parameter_names, args):
+            parameters[name] = value
         for name, value in kwargs.items():
-            arguments[name] = value
-        return arguments
+            parameters[name] = value
+        return parameters
 
     def describe(self):
-        """ Returns a description of all the functions in the registry.
+        """Returns a description of all the methods in the registry.
+
         :return: Description
+        :rtype: dict[str, object]
         """
         return {
             "methods": [method_info.describe()
@@ -250,7 +250,6 @@ class Registry(object):
 
         :param request: a werkzeug request with json data
         :type request: werkzeug.wrappers.Request
-
         :return: The parsed json object
         :rtype: dict[str, object]
         """
@@ -289,70 +288,69 @@ class Registry(object):
             raise MethodNotFoundError("Could not find method '%s'." % (msg["method"],))
 
     @staticmethod
-    def _validate_params_match(func, params):
-        argspec = inspect.getargspec(func)
+    def _validate_params_match(method, parameters):
+        argspec = inspect.getargspec(method)
         default_length = len(argspec.defaults) if argspec.defaults is not None else 0
-        if isinstance(params, list):
-            if len(params) > len(argspec.args) and argspec.varargs is None:
-                raise InvalidParamsError("Too many arguments")
+        if isinstance(parameters, list):
+            if len(parameters) > len(argspec.args) and argspec.varargs is None:
+                raise InvalidParamsError("Too many parameters")
 
-            remaining_args = len(argspec.args) - len(params)
-            if remaining_args > default_length:
-                raise InvalidParamsError("Not enough arguments")
-        elif isinstance(params, dict):
-            missing_args = [key for key in argspec.args if key not in params]
-            default_args = set(argspec.args[len(argspec.args) - default_length:])
-            for key in missing_args:
-                if key not in default_args:
-                    raise InvalidParamsError("Argument %s has not been satisfied" % (key,))
+            remaining_parameters = len(argspec.args) - len(parameters)
+            if remaining_parameters > default_length:
+                raise InvalidParamsError("Not enough parameters")
+        elif isinstance(parameters, dict):
+            missing_parameters = [key for key in argspec.args if key not in parameters]
+            default_parameters = set(argspec.args[len(argspec.args) - default_length:])
+            for key in missing_parameters:
+                if key not in default_parameters:
+                    raise InvalidParamsError("Parameter %s has not been satisfied" % (key,))
 
-            extra_params = [key for key in params if key not in argspec.args]
+            extra_params = [key for key in parameters if key not in argspec.args]
             if len(extra_params) > 0 and argspec.keywords is None:
-                raise InvalidParamsError("Too many arguments")
+                raise InvalidParamsError("Too many parameters")
 
     @staticmethod
-    def _check_types(arguments, argument_types):
-        """ Checks that the given arguments have the correct types.
+    def _check_types(parameters, parameter_types):
+        """Checks that the given parameters have the correct types.
 
-        :param arguments: List of (name, value) pairs of the given arguments
-        :type arguments: list[(str, object)]
-
-        :param argument_types: Argument type by name.
-        :type argument_types: dict[str,type]
+        :param parameters: List of (name, value) pairs of the given parameters
+        :type parameters: list[(str, object)]
+        :param parameter_types: Parameter type by name.
+        :type parameter_types: dict[str,type]
         """
-        for name, arg_type in argument_types.items():
-            if name not in arguments:
-                raise InvalidParamsError("Argument '%s' is missing." % (name,))
-            if not isinstance(arguments[name], arg_type):
-                raise InvalidParamsError("Value '%s' for argument '%s' is not of expected type %s."
-                                         % (arguments[name], name, arg_type))
+        for name, parameter_type in parameter_types.items():
+            if name not in parameters:
+                raise InvalidParamsError("Parameter '%s' is missing." % (name,))
+            if not isinstance(parameters[name], parameter_type):
+                raise InvalidParamsError("Value '%s' for parameter '%s' is not of expected type %s."
+                                         % (parameters[name], name, parameter_type))
 
     @staticmethod
-    def _check_type_declaration(argument_names, type_declarations):
-        """ Checks that exactly the given argument names have declared types.
+    def _check_type_declaration(parameter_names, parameter_types):
+        """Checks that exactly the given parameter names have declared types.
 
-        :param argument_names: The names of the arguments in the function declaration
-        :type argument_names: list[str]
-
-        :param type_declarations: Argument type by name
-        :type type_declarations: dict[str, type]
+        :param parameter_names: The names of the parameters in the method declaration
+        :type parameter_names: list[str]
+        :param parameter_types: Parameter type by name
+        :type parameter_types: dict[str, type]
         """
-        if RETURNS_KEY in argument_names:
-            raise Exception("'%s' may not be used as an argument name" % (RETURNS_KEY,))
-        if RETURNS_KEY not in type_declarations:
+        if RETURNS_KEY in parameter_names:
+            raise Exception("'%s' may not be used as a parameter name" % (RETURNS_KEY,))
+        if RETURNS_KEY not in parameter_types:
             raise Exception("Missing return type declaration")
-        if len(argument_names) != len(type_declarations) - 1:
-            raise Exception("Number of function arguments (%s) does not match number of "
+        if len(parameter_names) != len(parameter_types) - 1:
+            raise Exception("Number of method parameters (%s) does not match number of "
                             "declared types (%s)"
-                            % (len(argument_names), len(type_declarations) - 1))
-        for arg in argument_names:
-            if arg not in type_declarations:
-                raise Exception("Argument '%s' does not have a declared type" % (arg,))
+                            % (len(parameter_names), len(parameter_types) - 1))
+        for parameter_name in parameter_names:
+            if parameter_name not in parameter_types:
+                raise Exception("Parameter '%s' does not have a declared type" % (parameter_name,))
 
     @staticmethod
     def _check_return_type(value, expected_type):
-        """ Checks that the given return value has the correct type.
-        :param value: Value returned by the function
+        """Checks that the given return value has the correct type.
+
+        :param value: Value returned by the method
         :type value: any
         :param expected_type: Expected return type
         :type expected_type: type
@@ -366,8 +364,8 @@ class Registry(object):
                                          % (value, expected_type))
 
     @staticmethod
-    def _get_signature(arg_names, arg_types):
+    def _get_signature(parameter_names, parameter_types):
         return {
-            "returns": arg_types[RETURNS_KEY],
-            "argument_types": [(name, arg_types[name]) for name in arg_names]
+            "returns": parameter_types[RETURNS_KEY],
+            "parameter_types": [(name, parameter_types[name]) for name in parameter_names]
         }
