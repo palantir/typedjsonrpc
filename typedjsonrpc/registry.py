@@ -2,10 +2,11 @@
 import inspect
 import json
 import six
+import typedjsonrpc.parameter_checker as parameter_checker
 import wrapt
 
-from typedjsonrpc.errors import (Error, InternalError, InvalidParamsError, InvalidReturnTypeError,
-                                 InvalidRequestError, MethodNotFoundError, ParseError)
+from typedjsonrpc.errors import (Error, InternalError, InvalidRequestError, MethodNotFoundError,
+                                 ParseError)
 from typedjsonrpc.method_info import MethodInfo
 from werkzeug.debug.tbtools import get_current_traceback
 
@@ -110,7 +111,7 @@ class Registry(object):
         self._check_request(msg)
         method = self._name_to_method_info[msg["method"]].method
         params = msg.get("params", [])
-        Registry._validate_params_match(method, params)
+        parameter_checker.validate_params_match(method, params)
         if isinstance(params, list):
             result = method(*params)
         elif isinstance(params, dict):
@@ -181,10 +182,10 @@ class Registry(object):
             defaults = inspect.getargspec(method).defaults
             parameters = self._collect_parameters(parameter_names, args, kwargs, defaults)
 
-            self._check_types(parameters, parameter_types)
+            parameter_checker.check_types(parameters, parameter_types)
 
             result = method(*args, **kwargs)
-            self._check_return_type(result, returns)
+            parameter_checker.check_return_type(result, returns)
 
             return result
 
@@ -197,7 +198,7 @@ class Registry(object):
             :rtype: (T) -> U
             """
             parameter_names = inspect.getargspec(method).args
-            self._check_type_declaration(parameter_names, parameter_types)
+            parameter_checker.check_type_declaration(parameter_names, parameter_types)
 
             wrapped_method = type_check_wrapper(method, None, None, None)
             fully_qualified_name = "{}.{}".format(method.__module__, method.__name__)
@@ -286,78 +287,6 @@ class Registry(object):
                                           % (msg["id"], type(msg["id"])))
         if msg["method"] not in self._name_to_method_info:
             raise MethodNotFoundError("Could not find method '%s'." % (msg["method"],))
-
-    @staticmethod
-    def _validate_params_match(method, parameters):
-        argspec = inspect.getargspec(method)
-        default_length = len(argspec.defaults) if argspec.defaults is not None else 0
-        if isinstance(parameters, list):
-            if len(parameters) > len(argspec.args) and argspec.varargs is None:
-                raise InvalidParamsError("Too many parameters")
-
-            remaining_parameters = len(argspec.args) - len(parameters)
-            if remaining_parameters > default_length:
-                raise InvalidParamsError("Not enough parameters")
-        elif isinstance(parameters, dict):
-            missing_parameters = [key for key in argspec.args if key not in parameters]
-            default_parameters = set(argspec.args[len(argspec.args) - default_length:])
-            for key in missing_parameters:
-                if key not in default_parameters:
-                    raise InvalidParamsError("Parameter %s has not been satisfied" % (key,))
-
-            extra_params = [key for key in parameters if key not in argspec.args]
-            if len(extra_params) > 0 and argspec.keywords is None:
-                raise InvalidParamsError("Too many parameters")
-
-    @staticmethod
-    def _check_types(parameters, parameter_types):
-        """Checks that the given parameters have the correct types.
-
-        :param parameters: List of (name, value) pairs of the given parameters
-        :type parameters: list[(str, object)]
-        :param parameter_types: Parameter type by name.
-        :type parameter_types: dict[str,type]
-        """
-        for name, parameter_type in parameter_types.items():
-            if name not in parameters:
-                raise InvalidParamsError("Parameter '%s' is missing." % (name,))
-            if not isinstance(parameters[name], parameter_type):
-                raise InvalidParamsError("Value '%s' for parameter '%s' is not of expected type %s."
-                                         % (parameters[name], name, parameter_type))
-
-    @staticmethod
-    def _check_type_declaration(parameter_names, parameter_types):
-        """Checks that exactly the given parameter names have declared types.
-
-        :param parameter_names: The names of the parameters in the method declaration
-        :type parameter_names: list[str]
-        :param parameter_types: Parameter type by name
-        :type parameter_types: dict[str, type]
-        """
-        if len(parameter_names) != len(parameter_types):
-            raise Exception("Number of method parameters (%s) does not match number of "
-                            "declared types (%s)"
-                            % (len(parameter_names), len(parameter_types)))
-        for parameter_name in parameter_names:
-            if parameter_name not in parameter_types:
-                raise Exception("Parameter '%s' does not have a declared type" % (parameter_name,))
-
-    @staticmethod
-    def _check_return_type(value, expected_type):
-        """Checks that the given return value has the correct type.
-
-        :param value: Value returned by the method
-        :type value: any
-        :param expected_type: Expected return type
-        :type expected_type: type
-        """
-        if expected_type is None:
-            if value is not None:
-                raise InvalidReturnTypeError("Returned value is '%s' but None was expected"
-                                             % (value,))
-        elif not isinstance(value, expected_type):
-            raise InvalidReturnTypeError("Type of return value '%s' does not match expected type %s"
-                                         % (value, expected_type))
 
     @staticmethod
     def _get_signature(parameter_names, parameter_types, return_type):
