@@ -10,6 +10,7 @@ class MethodInfo(namedtuple("MethodInfo", ["name", "method", "signature"])):
 
     def describe(self):
         """Describes the method.
+
         :return: Description
         :rtype: dict[str, object]
         """
@@ -23,7 +24,7 @@ class MethodInfo(namedtuple("MethodInfo", ["name", "method", "signature"])):
     def _get_parameters(self):
         if self.signature is not None:
             return [{"name": p_name, "type": p_type.__name__}
-                    for (p_name, p_type) in self.signature["argument_types"]]
+                    for (p_name, p_type) in self.signature["parameter_types"]]
         return None
 
     def _get_return_type(self):
