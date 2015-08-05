@@ -11,8 +11,6 @@ from werkzeug.debug.tbtools import get_current_traceback
 
 __all__ = ["Registry"]
 
-RETURNS_KEY = "returns"
-
 
 class Registry(object):
     """The registry for storing and calling jsonrpc methods.
@@ -38,7 +36,9 @@ class Registry(object):
             return self.describe()
         _describe.__doc__ = self.describe.__doc__
 
-        describe_signature = self._get_signature([], {"returns": dict})
+        describe_signature = self._get_signature(parameter_names=[],
+                                                 parameter_types={},
+                                                 return_type=dict)
         self.register("rpc.describe", _describe, describe_signature)
 
     def dispatch(self, request):
@@ -150,7 +150,7 @@ class Registry(object):
             raise Exception("typedjsonrpc does not support making class methods into endpoints")
         self._name_to_method_info[name] = MethodInfo(name, method, parameter_types)
 
-    def method(self, **parameter_types):
+    def method(self, returns, **parameter_types):
         """Syntactic sugar for registering a method
 
         Example:
@@ -160,6 +160,8 @@ class Registry(object):
             ... def add(x, y):
             ...     return x + y
 
+        :param returns: The method's return type
+        :type returns: type
         :param parameter_types: The types of the method's parameters
         :type parameter_types: dict[str,type]
         """
@@ -179,12 +181,10 @@ class Registry(object):
             defaults = inspect.getargspec(method).defaults
             parameters = self._collect_parameters(parameter_names, args, kwargs, defaults)
 
-            param_types = parameter_types.copy()
-            return_type = param_types.pop(RETURNS_KEY)
-            self._check_types(parameters, param_types)
+            self._check_types(parameters, parameter_types)
 
             result = method(*args, **kwargs)
-            self._check_return_type(result, return_type)
+            self._check_return_type(result, returns)
 
             return result
 
@@ -202,7 +202,7 @@ class Registry(object):
             wrapped_method = type_check_wrapper(method, None, None, None)
             fully_qualified_name = "{}.{}".format(method.__module__, method.__name__)
             self.register(fully_qualified_name, wrapped_method,
-                          self._get_signature(parameter_names, parameter_types))
+                          self._get_signature(parameter_names, parameter_types, returns))
             return wrapped_method
 
         return register_method
@@ -334,14 +334,10 @@ class Registry(object):
         :param parameter_types: Parameter type by name
         :type parameter_types: dict[str, type]
         """
-        if RETURNS_KEY in parameter_names:
-            raise Exception("'%s' may not be used as a parameter name" % (RETURNS_KEY,))
-        if RETURNS_KEY not in parameter_types:
-            raise Exception("Missing return type declaration")
-        if len(parameter_names) != len(parameter_types) - 1:
+        if len(parameter_names) != len(parameter_types):
             raise Exception("Number of method parameters (%s) does not match number of "
                             "declared types (%s)"
-                            % (len(parameter_names), len(parameter_types) - 1))
+                            % (len(parameter_names), len(parameter_types)))
         for parameter_name in parameter_names:
             if parameter_name not in parameter_types:
                 raise Exception("Parameter '%s' does not have a declared type" % (parameter_name,))
@@ -364,8 +360,8 @@ class Registry(object):
                                          % (value, expected_type))
 
     @staticmethod
-    def _get_signature(parameter_names, parameter_types):
+    def _get_signature(parameter_names, parameter_types, return_type):
         return {
-            "returns": parameter_types[RETURNS_KEY],
+            "returns": return_type,
             "parameter_types": [(name, parameter_types[name]) for name in parameter_names]
         }
