@@ -1,9 +1,10 @@
-.coverage
-.idea/
-.tox/
+/.coverage
+/.idea/
+/.tox/
+/*.egg-info/
+/build/
+/dist/
 *.~
-*.egg-info/
 *.py[cod]
+*.swp
 __pycache__/
-build/
-dist/
