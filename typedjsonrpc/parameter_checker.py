@@ -1,4 +1,4 @@
-"""This module contains logic for checking parameter declarations and parameter types."""
+"""Logic for checking parameter declarations and parameter types."""
 import inspect
 
 from typedjsonrpc.errors import InvalidParamsError, InvalidReturnTypeError

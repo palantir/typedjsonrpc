@@ -1,4 +1,4 @@
-"""This module contains logic for storing and calling jsonrpc methods."""
+"""Logic for storing and calling jsonrpc methods."""
 import inspect
 import json
 import six
@@ -45,7 +45,7 @@ class Registry(object):
 
         :param request: a werkzeug request with json data
         :type request: werkzeug.wrappers.Request
-        :returns: json output of the corresponding method
+        :return: json output of the corresponding method
         :rtype: str
         """
         def _wrapped():
