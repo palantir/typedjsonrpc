@@ -7,7 +7,7 @@ import wrapt
 
 from typedjsonrpc.errors import (Error, InternalError, InvalidRequestError, MethodNotFoundError,
                                  ParseError)
-from typedjsonrpc.method_info import MethodInfo
+from typedjsonrpc.method_info import MethodInfo, MethodSignature
 from werkzeug.debug.tbtools import get_current_traceback
 
 __all__ = ["Registry"]
@@ -37,9 +37,7 @@ class Registry(object):
             return self.describe()
         _describe.__doc__ = self.describe.__doc__
 
-        describe_signature = self._get_signature(parameter_names=[],
-                                                 parameter_types={},
-                                                 return_type=dict)
+        describe_signature = MethodSignature.create([], {}, dict)
         self.register("rpc.describe", _describe, describe_signature)
 
     def dispatch(self, request):
@@ -137,19 +135,19 @@ class Registry(object):
             "error": exc.as_error_object(),
         }
 
-    def register(self, name, method, parameter_types=None):
+    def register(self, name, method, method_signature=None):
         """Registers a method with a given name and signature.
 
         :param name: The name used to register the method
         :type name: str
         :param method: The method to register
         :type method: function
-        :param parameter_types: List of the parameter names and types
-        :type parameter_types: list[str, type]
+        :param method_signature: The method signature for the given function
+        :type method_signature: MethodSignature or None
         """
         if inspect.ismethod(method):
             raise Exception("typedjsonrpc does not support making class methods into endpoints")
-        self._name_to_method_info[name] = MethodInfo(name, method, parameter_types)
+        self._name_to_method_info[name] = MethodInfo(name, method, method_signature)
 
     def method(self, returns, **parameter_types):
         """Syntactic sugar for registering a method
@@ -193,9 +191,9 @@ class Registry(object):
             """Registers a method with its fully qualified name.
 
             :param method: The method to register
-            :type method: (T) -> U
+            :type method: function
             :return: The original method wrapped into a type-checker
-            :rtype: (T) -> U
+            :rtype: function
             """
             parameter_names = inspect.getargspec(method).args
             parameter_checker.check_type_declaration(parameter_names, parameter_types)
@@ -203,7 +201,7 @@ class Registry(object):
             wrapped_method = type_check_wrapper(method, None, None, None)
             fully_qualified_name = "{}.{}".format(method.__module__, method.__name__)
             self.register(fully_qualified_name, wrapped_method,
-                          self._get_signature(parameter_names, parameter_types, returns))
+                          MethodSignature.create(parameter_names, parameter_types, returns))
             return wrapped_method
 
         return register_method
@@ -287,10 +285,3 @@ class Registry(object):
                                           .format(msg["id"], type(msg["id"])))
         if msg["method"] not in self._name_to_method_info:
             raise MethodNotFoundError("Could not find method '{}'.".format(msg["method"]))
-
-    @staticmethod
-    def _get_signature(parameter_names, parameter_types, return_type):
-        return {
-            "returns": return_type,
-            "parameter_types": [(name, parameter_types[name]) for name in parameter_names]
-        }

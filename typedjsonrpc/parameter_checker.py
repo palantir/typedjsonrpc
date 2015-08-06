@@ -39,7 +39,7 @@ def check_types(parameters, parameter_types):
     """Checks that the given parameters have the correct types.
 
     :param parameters: List of (name, value) pairs of the given parameters
-    :type parameters: list[(str, object)]
+    :type parameters: dict[str, object]
     :param parameter_types: Parameter type by name.
     :type parameter_types: dict[str,type]
     """
