@@ -13,7 +13,7 @@ class MethodInfo(namedtuple("MethodInfo", ["name", "method", "signature"])):
     :attribute method: The function being described
     :type method: function
     :attribute signature: A description of the types this method takes as parameters and returns
-    :type signature: MethodSignature or None
+    :type signature: MethodSignature
     """
 
     def describe(self):
@@ -24,34 +24,32 @@ class MethodInfo(namedtuple("MethodInfo", ["name", "method", "signature"])):
         """
         return {
             "name": self.name,
-            "params": self.parameters,
-            "returns": self.return_type,
+            "params": self.params,
+            "returns": self.returns,
             "description": self.description,
         }
 
     @property
-    def parameters(self):
+    def params(self):
         """The parameters for this method in a JSON-compatible format
 
         :rtype: list[dict[str, str]]
         """
-        if self.signature is not None:
-            return [{"name": p_name, "type": p_type.__name__}
-                    for (p_name, p_type) in self.signature.parameter_types]
+        return [{"name": p_name, "type": p_type.__name__}
+                for (p_name, p_type) in self.signature.parameter_types]
 
     @property
-    def return_type(self):
+    def returns(self):
         """The return type for this method in a JSON-compatible format.
 
         This handles the special case of ``None`` which allows ``type(None)`` also.
 
         :rtype: str or None
         """
-        if self.signature is not None:
-            returns = self.signature.return_type
-            none_type = type(None)
-            if returns is not None and returns is not none_type:
-                return returns.__name__
+        return_type = self.signature.return_type
+        none_type = type(None)
+        if return_type is not None and return_type is not none_type:
+            return return_type.__name__
 
     @property
     def description(self):
