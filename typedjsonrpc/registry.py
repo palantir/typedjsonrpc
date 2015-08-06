@@ -52,14 +52,14 @@ class Registry(object):
         """
         def _wrapped():
             messages = self._get_request_messages(request)
-            result = [self._dispatch_and_handle_errors(message) for message in messages]
-            non_notification_result = [x for x in result if x is not None]
-            if len(non_notification_result) == 0:
+            results = [self._dispatch_and_handle_errors(message) for message in messages]
+            non_notification_results = [x for x in results if x is not None]
+            if len(non_notification_results) == 0:
                 return
             elif len(messages) == 1:
-                return non_notification_result[0]
+                return non_notification_results[0]
             else:
-                return non_notification_result
+                return non_notification_results
 
         result = self._handle_exceptions(_wrapped)
         if result is not None:
