@@ -117,8 +117,8 @@ class Registry(object):
         elif isinstance(params, dict):
             result = method(**params)
         else:
-            raise InvalidRequestError("Given params '%s' are neither a list nor a dict."
-                                      % (msg["params"],))
+            raise InvalidRequestError("Given params '{}' are neither a list nor a dict."
+                                      .format(msg["params"]))
         return result
 
     @staticmethod
@@ -258,7 +258,7 @@ class Registry(object):
         try:
             msg = json.loads(data)
         except Exception:
-            raise ParseError("Could not parse request data '%s'" % (data,))
+            raise ParseError("Could not parse request data '{}'".format(data))
         if isinstance(msg, list):
             return msg
         else:
@@ -273,8 +273,8 @@ class Registry(object):
         if "jsonrpc" not in msg:
             raise InvalidRequestError("'\"jsonrpc\": \"2.0\"' must be included.")
         if msg["jsonrpc"] != "2.0":
-            raise InvalidRequestError("'jsonrpc' must be exactly the string '2.0', but it was '%s'."
-                                      % (msg["jsonrpc"],))
+            raise InvalidRequestError("'jsonrpc' must be exactly the string '2.0', but it was '{}'."
+                                      .format(msg["jsonrpc"]))
         if "method" not in msg:
             raise InvalidRequestError("No method specified.")
         if "id" in msg:
@@ -283,10 +283,10 @@ class Registry(object):
             if isinstance(msg["id"], float):
                 raise InvalidRequestError("typedjsonrpc does not support float ids.")
             if not isinstance(msg["id"], (six.string_types, int)):
-                raise InvalidRequestError("id must be a string or integer; '%s' is of type %s."
-                                          % (msg["id"], type(msg["id"])))
+                raise InvalidRequestError("id must be a string or integer; '{}' is of type {}."
+                                          .format(msg["id"], type(msg["id"])))
         if msg["method"] not in self._name_to_method_info:
-            raise MethodNotFoundError("Could not find method '%s'." % (msg["method"],))
+            raise MethodNotFoundError("Could not find method '{}'.".format(msg["method"]))
 
     @staticmethod
     def _get_signature(parameter_names, parameter_types, return_type):

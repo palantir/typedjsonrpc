@@ -28,7 +28,7 @@ def validate_params_match(method, parameters):
         default_parameters = set(argspec.args[len(argspec.args) - default_length:])
         for key in missing_parameters:
             if key not in default_parameters:
-                raise InvalidParamsError("Parameter %s has not been satisfied" % (key,))
+                raise InvalidParamsError("Parameter {} has not been satisfied".format(key))
 
         extra_params = [key for key in parameters if key not in argspec.args]
         if len(extra_params) > 0 and argspec.keywords is None:
@@ -45,10 +45,10 @@ def check_types(parameters, parameter_types):
     """
     for name, parameter_type in parameter_types.items():
         if name not in parameters:
-            raise InvalidParamsError("Parameter '%s' is missing." % (name,))
+            raise InvalidParamsError("Parameter '{}' is missing.".format(name))
         if not isinstance(parameters[name], parameter_type):
-            raise InvalidParamsError("Value '%s' for parameter '%s' is not of expected type %s."
-                                     % (parameters[name], name, parameter_type))
+            raise InvalidParamsError("Value '{}' for parameter '{}' is not of expected type {}."
+                                     .format(parameters[name], name, parameter_type))
 
 
 def check_type_declaration(parameter_names, parameter_types):
@@ -60,12 +60,12 @@ def check_type_declaration(parameter_names, parameter_types):
     :type parameter_types: dict[str, type]
     """
     if len(parameter_names) != len(parameter_types):
-        raise Exception("Number of method parameters (%s) does not match number of "
-                        "declared types (%s)"
-                        % (len(parameter_names), len(parameter_types)))
+        raise Exception("Number of method parameters ({}) does not match number of "
+                        "declared types ({})"
+                        .format(len(parameter_names), len(parameter_types)))
     for parameter_name in parameter_names:
         if parameter_name not in parameter_types:
-            raise Exception("Parameter '%s' does not have a declared type" % (parameter_name,))
+            raise Exception("Parameter '{}' does not have a declared type".format(parameter_name))
 
 
 def check_return_type(value, expected_type):
@@ -78,8 +78,8 @@ def check_return_type(value, expected_type):
     """
     if expected_type is None:
         if value is not None:
-            raise InvalidReturnTypeError("Returned value is '%s' but None was expected"
-                                         % (value,))
+            raise InvalidReturnTypeError("Returned value is '{}' but None was expected"
+                                         .format(value))
     elif not isinstance(value, expected_type):
-        raise InvalidReturnTypeError("Type of return value '%s' does not match expected type %s"
-                                     % (value, expected_type))
+        raise InvalidReturnTypeError("Type of return value '{}' does not match expected type {}"
+                                     .format(value, expected_type))
