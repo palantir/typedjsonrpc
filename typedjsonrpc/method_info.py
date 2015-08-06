@@ -1,4 +1,4 @@
-"""This module contains a data structure for wrapping methods and information about them."""
+"""Data structure for wrapping methods and information about them."""
 
 from collections import namedtuple
 
@@ -16,20 +16,26 @@ class MethodInfo(namedtuple("MethodInfo", ["name", "method", "signature"])):
         """
         return {
             "name": self.name,
-            "params": self._get_parameters(),
-            "returns": self._get_return_type(),
-            "description": self.method.__doc__
+            "params": self.parameters,
+            "returns": self.return_type,
+            "description": self.description,
         }
 
-    def _get_parameters(self):
+    @property
+    def parameters(self):
         if self.signature is not None:
             return [{"name": p_name, "type": p_type.__name__}
                     for (p_name, p_type) in self.signature["parameter_types"]]
         return None
 
-    def _get_return_type(self):
+    @property
+    def return_type(self):
         if self.signature is not None:
-            return_type = self.signature["returns"]
+            returns = self.signature["returns"]
             none_type = type(None)
-            if return_type is not None and return_type is not none_type:
-                return return_type.__name__
+            if returns is not None and returns is not none_type:
+                return returns.__name__
+
+    @property
+    def description(self):
+        return self.method.__doc__
