@@ -157,6 +157,7 @@ response will contain an error object with a ``debug_url``::
         },
         "id": "bar"
     }
+    EOF
 
     {
         "jsonrpc": "2.0",
