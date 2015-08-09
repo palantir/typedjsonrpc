@@ -1,4 +1,4 @@
-"""This module contains logic for storing and calling jsonrpc methods."""
+"""Logic for storing and calling jsonrpc methods."""
 import inspect
 import json
 import six
@@ -7,7 +7,7 @@ import wrapt
 
 from typedjsonrpc.errors import (Error, InternalError, InvalidRequestError, MethodNotFoundError,
                                  ParseError)
-from typedjsonrpc.method_info import MethodInfo
+from typedjsonrpc.method_info import MethodInfo, MethodSignature
 from werkzeug.debug.tbtools import get_current_traceback
 
 __all__ = ["Registry"]
@@ -37,9 +37,7 @@ class Registry(object):
             return self.describe()
         _describe.__doc__ = self.describe.__doc__
 
-        describe_signature = self._get_signature(parameter_names=[],
-                                                 parameter_types={},
-                                                 return_type=dict)
+        describe_signature = MethodSignature.create([], {}, dict)
         self.register("rpc.describe", _describe, describe_signature)
 
     def dispatch(self, request):
@@ -47,19 +45,19 @@ class Registry(object):
 
         :param request: a werkzeug request with json data
         :type request: werkzeug.wrappers.Request
-        :returns: json output of the corresponding method
+        :return: json output of the corresponding method
         :rtype: str
         """
         def _wrapped():
             messages = self._get_request_messages(request)
-            result = [self._dispatch_and_handle_errors(message) for message in messages]
-            non_notification_result = [x for x in result if x is not None]
-            if len(non_notification_result) == 0:
+            results = [self._dispatch_and_handle_errors(message) for message in messages]
+            non_notification_results = [x for x in results if x is not None]
+            if len(non_notification_results) == 0:
                 return
             elif len(messages) == 1:
-                return non_notification_result[0]
+                return non_notification_results[0]
             else:
-                return non_notification_result
+                return non_notification_results
 
         result = self._handle_exceptions(_wrapped)
         if result is not None:
@@ -117,8 +115,8 @@ class Registry(object):
         elif isinstance(params, dict):
             result = method(**params)
         else:
-            raise InvalidRequestError("Given params '%s' are neither a list nor a dict."
-                                      % (msg["params"],))
+            raise InvalidRequestError("Given params '{}' are neither a list nor a dict."
+                                      .format(msg["params"]))
         return result
 
     @staticmethod
@@ -137,19 +135,19 @@ class Registry(object):
             "error": exc.as_error_object(),
         }
 
-    def register(self, name, method, parameter_types=None):
+    def register(self, name, method, method_signature=None):
         """Registers a method with a given name and signature.
 
         :param name: The name used to register the method
         :type name: str
         :param method: The method to register
         :type method: function
-        :param parameter_types: List of the parameter names and types
-        :type parameter_types: list[str, type]
+        :param method_signature: The method signature for the given function
+        :type method_signature: MethodSignature or None
         """
         if inspect.ismethod(method):
             raise Exception("typedjsonrpc does not support making class methods into endpoints")
-        self._name_to_method_info[name] = MethodInfo(name, method, parameter_types)
+        self._name_to_method_info[name] = MethodInfo(name, method, method_signature)
 
     def method(self, returns, **parameter_types):
         """Syntactic sugar for registering a method
@@ -193,9 +191,9 @@ class Registry(object):
             """Registers a method with its fully qualified name.
 
             :param method: The method to register
-            :type method: (T) -> U
+            :type method: function
             :return: The original method wrapped into a type-checker
-            :rtype: (T) -> U
+            :rtype: function
             """
             parameter_names = inspect.getargspec(method).args
             parameter_checker.check_type_declaration(parameter_names, parameter_types)
@@ -203,7 +201,7 @@ class Registry(object):
             wrapped_method = type_check_wrapper(method, None, None, None)
             fully_qualified_name = "{}.{}".format(method.__module__, method.__name__)
             self.register(fully_qualified_name, wrapped_method,
-                          self._get_signature(parameter_names, parameter_types, returns))
+                          MethodSignature.create(parameter_names, parameter_types, returns))
             return wrapped_method
 
         return register_method
@@ -258,7 +256,7 @@ class Registry(object):
         try:
             msg = json.loads(data)
         except Exception:
-            raise ParseError("Could not parse request data '%s'" % (data,))
+            raise ParseError("Could not parse request data '{}'".format(data))
         if isinstance(msg, list):
             return msg
         else:
@@ -273,8 +271,8 @@ class Registry(object):
         if "jsonrpc" not in msg:
             raise InvalidRequestError("'\"jsonrpc\": \"2.0\"' must be included.")
         if msg["jsonrpc"] != "2.0":
-            raise InvalidRequestError("'jsonrpc' must be exactly the string '2.0', but it was '%s'."
-                                      % (msg["jsonrpc"],))
+            raise InvalidRequestError("'jsonrpc' must be exactly the string '2.0', but it was '{}'."
+                                      .format(msg["jsonrpc"]))
         if "method" not in msg:
             raise InvalidRequestError("No method specified.")
         if "id" in msg:
@@ -283,14 +281,7 @@ class Registry(object):
             if isinstance(msg["id"], float):
                 raise InvalidRequestError("typedjsonrpc does not support float ids.")
             if not isinstance(msg["id"], (six.string_types, int)):
-                raise InvalidRequestError("id must be a string or integer; '%s' is of type %s."
-                                          % (msg["id"], type(msg["id"])))
+                raise InvalidRequestError("id must be a string or integer; '{}' is of type {}."
+                                          .format(msg["id"], type(msg["id"])))
         if msg["method"] not in self._name_to_method_info:
-            raise MethodNotFoundError("Could not find method '%s'." % (msg["method"],))
-
-    @staticmethod
-    def _get_signature(parameter_names, parameter_types, return_type):
-        return {
-            "returns": return_type,
-            "parameter_types": [(name, parameter_types[name]) for name in parameter_names]
-        }
+            raise MethodNotFoundError("Could not find method '{}'.".format(msg["method"]))

@@ -1,3 +1,3 @@
-typed-jsonrpc
+typedjsonrpc
 =============
-A typed decorator-based json-rpc library for Python
+A decorator-based JSON-RPC library for Python that exposes parameter and return types.

@@ -1,4 +1,4 @@
-"""This module defines error classes for typedjsonrpc."""
+"""Error classes for typedjsonrpc."""
 import traceback
 import sys
 
@@ -54,9 +54,8 @@ class InternalError(Error):
     @staticmethod
     def from_error(exc, debug_url=None):
         """Wraps another Exception in an InternalError.
-        :param exc:
+
         :type exc: Exception
-        :return: The wrapped exception
         :rtype: InternalError
         """
         data = exc.__dict__.copy()

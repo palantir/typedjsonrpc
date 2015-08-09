@@ -4,7 +4,6 @@ from __future__ import absolute_import, print_function
 import json
 
 from werkzeug.debug import DebuggedApplication
-from werkzeug.debug.tbtools import get_current_traceback
 from werkzeug.exceptions import abort
 from werkzeug.serving import run_simple
 from werkzeug.routing import Map, Rule
@@ -101,31 +100,13 @@ class DebuggedJsonRpcApplication(DebuggedApplication):
         :type start_response: (str, list[(str, str)]) -> None
         :rtype: generator[str]
         """
-        app_iter = None
         adapter = self._debug_map.bind_to_environ(environ)
         if adapter.test():
             _, args = adapter.match()
-            yield self.handle_debug(environ, start_response, args["traceback_id"])
+            return self.handle_debug(environ, start_response, args["traceback_id"])
         else:
-            try:
-                app_iter = self.app(environ, start_response)
-                for item in app_iter:
-                    yield item
-                if hasattr(app_iter, 'close'):
-                    app_iter.close()
-            except Exception:  # pylint: disable=broad-except
-                if hasattr(app_iter, 'close'):
-                    app_iter.close()
-                traceback = get_current_traceback(skip=1,
-                                                  show_hidden_frames=self.show_hidden_frames,
-                                                  ignore_system_exceptions=True)
-                for frame in traceback.frames:
-                    self.frames[frame.id] = frame
-                self.tracebacks[traceback.id] = traceback
-                error_iter = self.app.handle_json_error(environ, start_response, traceback)
-                for item in error_iter:
-                    yield item
-                traceback.log(environ['wsgi.errors'])
+            return super(DebuggedJsonRpcApplication, self).debug_application(environ,
+                                                                             start_response)
 
     def handle_debug(self, environ, start_response, traceback_id):
         """Handles the debug endpoint for inspecting previous errors.
@@ -141,25 +122,11 @@ class DebuggedJsonRpcApplication(DebuggedApplication):
             abort(404)
         self._copy_over_traceback(traceback_id)
         traceback = self.tracebacks[traceback_id]
-        try:
-            start_response('500 INTERNAL SERVER ERROR', [
-                ('Content-Type', 'text/html; charset=utf-8'),
-                # Disable Chrome's XSS protection, the debug
-                # output can cause false-positives.
-                ('X-XSS-Protection', '0'),
-            ])
-        except Exception:  # pylint: disable=broad-except
-            # if we end up here there has been output but an error
-            # occurred.  in that situation we can do nothing fancy any
-            # more, better log something into the error log and fall
-            # back gracefully.
-            environ['wsgi.errors'].write(
-                'Debugging middleware caught exception in streamed '
-                'response at a point where response headers were already '
-                'sent.\n')
-        else:
-            rendered = traceback.render_full(evalex=self.evalex, secret=self.secret)
-            return rendered.encode('utf-8', 'replace')
+        rendered = traceback.render_full(evalex=self.evalex, secret=self.secret)
+        response = Response(rendered.encode('utf-8', 'replace'),
+                            headers=[('Content-Type', 'text/html; charset=utf-8'),
+                                     ('X-XSS-Protection', '0')])
+        return response(environ, start_response)
 
     def _copy_over_traceback(self, traceback_id):
         if traceback_id not in self.tracebacks:
