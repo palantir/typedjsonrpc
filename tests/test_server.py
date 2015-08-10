@@ -118,3 +118,25 @@ class TestServer(object):
         mock_start_response = mock.Mock()
         server(environ, mock_start_response)
         mock_registry.dispatch.assert_called_once_with(mock.ANY)
+
+    def test_before_first_request_funcs(self):
+        environ = {
+            "SERVER_NAME": "localhost",
+            "SERVER_PORT": "5060",
+            "PATH_INFO": "/foo",
+            "REQUEST_METHOD": "POST",
+            "wsgi.url_scheme": "http",
+        }
+        mock_registry = mock.Mock()
+        mock_registry.dispatch.return_value = "foo"
+
+        mock_start = mock.Mock()
+        mock_start.return_value(None)
+        server = Server(mock_registry, "/foo")
+        server.register_before_first_request(mock_start)
+
+        mock_start_response = mock.Mock()
+        server(environ, mock_start_response)
+        server(environ, mock_start_response)
+
+        mock_start.assert_called_once_with()
