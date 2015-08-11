@@ -159,6 +159,16 @@ def test_method_parameter_named_returns():
             return str(some_number) + returns
 
 
+def test_method_long_parameter():
+    registry = Registry()
+
+    @registry.method(returns=int, some_number=int)
+    def foo(some_number):
+        return 2 * some_number
+
+    foo(9999999999999999999999)
+
+
 class TestDispatch(object):
 
     @staticmethod

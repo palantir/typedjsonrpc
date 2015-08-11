@@ -1,5 +1,6 @@
 """Logic for checking parameter declarations and parameter types."""
 import inspect
+import six
 
 from typedjsonrpc.errors import InvalidParamsError, InvalidReturnTypeError
 
@@ -46,7 +47,7 @@ def check_types(parameters, parameter_types):
     for name, parameter_type in parameter_types.items():
         if name not in parameters:
             raise InvalidParamsError("Parameter '{}' is missing.".format(name))
-        if not isinstance(parameters[name], parameter_type):
+        if not _is_instance(parameters[name], parameter_type):
             raise InvalidParamsError("Value '{}' for parameter '{}' is not of expected type {}."
                                      .format(parameters[name], name, parameter_type))
 
@@ -80,6 +81,13 @@ def check_return_type(value, expected_type):
         if value is not None:
             raise InvalidReturnTypeError("Returned value is '{}' but None was expected"
                                          .format(value))
-    elif not isinstance(value, expected_type):
+    elif not _is_instance(value, expected_type):
         raise InvalidReturnTypeError("Type of return value '{}' does not match expected type {}"
                                      .format(value, expected_type))
+
+
+def _is_instance(value, expected_type):
+    if expected_type is int:
+        return isinstance(value, six.integer_types)
+    else:
+        return isinstance(value, expected_type)

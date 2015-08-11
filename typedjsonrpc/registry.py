@@ -280,7 +280,7 @@ class Registry(object):
                 raise InvalidRequestError("typedjsonrpc does not allow id to be None.")
             if isinstance(msg["id"], float):
                 raise InvalidRequestError("typedjsonrpc does not support float ids.")
-            if not isinstance(msg["id"], (six.string_types, int)):
+            if not isinstance(msg["id"], (six.string_types, six.integer_types)):
                 raise InvalidRequestError("id must be a string or integer; '{}' is of type {}."
                                           .format(msg["id"], type(msg["id"])))
         if msg["method"] not in self._name_to_method_info:
