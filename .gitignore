@@ -3,6 +3,7 @@
 /.tox/
 /*.egg-info/
 /build/
+/docs/_build
 /dist/
 *.~
 *.py[cod]
