@@ -1,14 +1,8 @@
 """Logic for checking parameter declarations and parameter types."""
 import inspect
-import sys
+import six
 
 from typedjsonrpc.errors import InvalidParamsError, InvalidReturnTypeError
-
-
-if sys.version_info < (3,):
-    INTEGER_TYPES = (int, long,)  # pylint: disable=E0602
-else:
-    INTEGER_TYPES = (int,)
 
 
 def validate_params_match(method, parameters):
@@ -93,7 +87,7 @@ def check_return_type(value, expected_type):
 
 
 def _is_instance(value, expected_type):
-    if expected_type == int:
-        return isinstance(value, INTEGER_TYPES)
+    if expected_type is int:
+        return isinstance(value, six.integer_types)
     else:
         return isinstance(value, expected_type)
