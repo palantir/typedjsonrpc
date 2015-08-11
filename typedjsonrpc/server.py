@@ -1,8 +1,6 @@
 """Contains the Werkzeug server for debugging and WSGI compatibility."""
 from __future__ import absolute_import, print_function
 
-import json
-
 from werkzeug.debug import DebuggedApplication
 from werkzeug.exceptions import abort
 from werkzeug.serving import run_simple
@@ -61,12 +59,6 @@ class Server(object):
         self.registry.debug = True
         debugged = DebuggedJsonRpcApplication(self, evalex=True)
         run_simple(host, port, debugged, use_reloader=True, **options)
-
-    @staticmethod
-    def handle_json_error(environ, start_response, traceback):
-        """Handles a json error specially by returning the id which links to the failure"""
-        response = Response(json.dumps({"traceback_id": traceback.id}), mimetype="application/json")
-        return response(environ, start_response)
 
 
 class DebuggedJsonRpcApplication(DebuggedApplication):
