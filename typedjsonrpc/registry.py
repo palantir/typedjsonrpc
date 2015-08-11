@@ -37,6 +37,12 @@ class Registry(object):
     :type tracebacks: dict[int, werkzeug.debug.tbtools.Traceback]
     """
 
+    json_encoder = json.JSONEncoder
+    """The JSON encoder class to use.  Defaults to :class:`json.JSONEncoder`"""
+
+    json_decoder = json.JSONDecoder
+    """The JSON decoder class to use. Defaults to :class:`json.JSONDecoder`"""
+
     def __init__(self, debug=False):
         """
         :param debug: If True, the registry records tracebacks for debugging purposes
@@ -46,12 +52,6 @@ class Registry(object):
         self._register_describe()
         self.debug = debug
         self.tracebacks = {}
-
-    # The JSON encoder class to use.  Defaults to :class:`json.JSONEncoder`.
-    json_encoder = json.JSONEncoder
-
-    # The JSON decoder class to use. Defaults to :class:`json.JSONDecoder`.
-    json_decoder = json.JSONDecoder
 
     def _register_describe(self):
         def _describe():
