@@ -16,6 +16,8 @@
 """Contains the Werkzeug server for debugging and WSGI compatibility."""
 from __future__ import absolute_import, print_function
 
+from threading import Lock
+
 from werkzeug.debug import DebuggedApplication
 from werkzeug.exceptions import abort
 from werkzeug.serving import run_simple
@@ -46,7 +48,15 @@ class Server(object):
         self._endpoint = endpoint
         self._url_map = Map([Rule(endpoint, endpoint=self._endpoint)])
 
+        # Functions called before first request to this instance of WSGI app.
+        # To add a function use :method:`register_before_first_request`.
+        self._before_first_request_funcs = []
+
+        self._after_first_request_handled = False
+        self._before_first_request_lock = Lock()
+
     def _dispatch_request(self, request):
+        self._try_trigger_before_first_request_funcs()
         adapter = self._url_map.bind_to_environ(request.environ)
         endpoint, _ = adapter.match()
         if endpoint == self._endpoint:
@@ -74,6 +84,27 @@ class Server(object):
         self.registry.debug = True
         debugged = DebuggedJsonRpcApplication(self, evalex=True)
         run_simple(host, port, debugged, use_reloader=True, **options)
+
+    def _try_trigger_before_first_request_funcs(self):  # pylint: disable=C0103
+        """Called before each request. Calls functions from `self.before_first_request_funcs`
+        if this is the first request of the instance
+        """
+        if self._after_first_request_handled:
+            return
+        else:
+            with self._before_first_request_lock:
+                if self._after_first_request_handled:
+                    return
+                for func in self._before_first_request_funcs:
+                    func()
+                self._after_first_request_handled = True
+
+    def register_before_first_request(self, func):
+        """Adds function to be called before first request served by a server instance
+        :param func: Function called.
+        :type func: ()-> object
+        """
+        self._before_first_request_funcs.append(func)
 
 
 class DebuggedJsonRpcApplication(DebuggedApplication):
