@@ -267,7 +267,7 @@ class Registry(object):
         :return: The parsed json object
         :rtype: dict[str, object]
         """
-        data = request.get_data()
+        data = request.get_data(as_text=True)
         try:
             msg = json.loads(data)
         except Exception:

@@ -206,7 +206,7 @@ class TestDispatch(object):
     @staticmethod
     def _create_fake_request(data):
         class FakeRequest(object):
-            def get_data(self):
+            def get_data(self, as_text=False):
                 return json.dumps(data)
         return FakeRequest()
 
@@ -343,7 +343,7 @@ class TestDispatch(object):
         registry = Registry()
 
         class FakeRequest(object):
-            def get_data(self):
+            def get_data(self, as_text=False):
                 return '{ "jsonrpc": "2.0", "method":, "id":]'
 
         fake_request = FakeRequest()
