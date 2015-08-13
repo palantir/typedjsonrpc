@@ -37,6 +37,12 @@ class Registry(object):
     :type tracebacks: dict[int, werkzeug.debug.tbtools.Traceback]
     """
 
+    json_encoder = json.JSONEncoder
+    """The JSON encoder class to use.  Defaults to :class:`json.JSONEncoder`"""
+
+    json_decoder = json.JSONDecoder
+    """The JSON decoder class to use. Defaults to :class:`json.JSONDecoder`"""
+
     def __init__(self, debug=False):
         """
         :param debug: If True, the registry records tracebacks for debugging purposes
@@ -76,7 +82,7 @@ class Registry(object):
 
         result = self._handle_exceptions(_wrapped)
         if result is not None:
-            return json.dumps(result)
+            return json.dumps(result, cls=self.json_encoder)
 
     def _dispatch_and_handle_errors(self, msg):
         is_notification = isinstance(msg, dict) and "id" not in msg
@@ -258,8 +264,7 @@ class Registry(object):
                         for method_info in sorted(self._name_to_method_info.values())]
         }
 
-    @staticmethod
-    def _get_request_messages(request):
+    def _get_request_messages(self, request):
         """Parses the request as a json message.
 
         :param request: a werkzeug request with json data
@@ -269,7 +274,7 @@ class Registry(object):
         """
         data = request.get_data(as_text=True)
         try:
-            msg = json.loads(data)
+            msg = json.loads(data, cls=self.json_decoder)
         except Exception:
             raise ParseError("Could not parse request data '{}'".format(data))
         if isinstance(msg, list):
