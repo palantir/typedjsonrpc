@@ -1,0 +1,3 @@
+include README.rst
+include typedjsonrpc/_version.py
+include versioneer.py
