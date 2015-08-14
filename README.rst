@@ -95,7 +95,7 @@ the correct way to use these would be::
 To check that everything is running properly, try (assuming ``add`` is declared in your main
 module)::
 
-    $ curl -XPOST http://localhost:3031/api -d @- <<EOF
+    $ curl -XPOST http://<host>:<port>/api -d @- <<EOF
     {
         "jsonrpc": "2.0",
         "method": "__main__.add",
@@ -121,7 +121,7 @@ You can send a list of JSON-RPC request objects as one request and will receive 
 response objects in return. These response objects can be mapped back to the request objects using
 the ``id``. Here's an example of calling the ``add`` method with two sets of parameters::
 
-    $ curl -XPOST http://localhost:3031/api -d @- <<EOF
+    $ curl -XPOST http://<host>:<port>/api -d @- <<EOF
     [
         {
             "jsonrpc": "2.0",
@@ -162,7 +162,7 @@ If you create the registry with the parameter ``debug=True``, you'll be able to 
 error during execution - e.g. you tried to use a string as one of the parameters for ``add`` - the
 response will contain an error object with a ``debug_url``::
 
-    $ curl -XPOST http://localhost:3031/api -d @- <<EOF
+    $ curl -XPOST http://<host>:<port>/api -d @- <<EOF
     {
         "jsonrpc": "2.0",
         "method": "__main__.add",
@@ -187,4 +187,4 @@ response will contain an error object with a ``debug_url``::
         }
     }
 
-This tells you to find the traceback interpreter at ``localhost:3031/debug/1234567890``.
+This tells you to find the traceback interpreter at ``<host>:<port>/debug/1234567890``.
