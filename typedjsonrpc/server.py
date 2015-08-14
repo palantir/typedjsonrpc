@@ -48,8 +48,6 @@ class Server(object):
         self._endpoint = endpoint
         self._url_map = Map([Rule(endpoint, endpoint=self._endpoint)])
 
-        # Functions called before first request to this instance of WSGI app.
-        # To add a function use :method:`register_before_first_request`.
         self._before_first_request_funcs = []
 
         self._after_first_request_handled = False
@@ -86,9 +84,7 @@ class Server(object):
         run_simple(host, port, debugged, use_reloader=True, **options)
 
     def _try_trigger_before_first_request_funcs(self):  # pylint: disable=C0103
-        """Called before each request. Calls functions from `self.before_first_request_funcs`
-        if this is the first request of the instance
-        """
+        """Runs each function from ``self.before_first_request_funcs`` once and only once."""
         if self._after_first_request_handled:
             return
         else:
@@ -100,15 +96,16 @@ class Server(object):
                 self._after_first_request_handled = True
 
     def register_before_first_request(self, func):
-        """Adds function to be called before first request served by a server instance
-        :param func: Function called.
-        :type func: ()-> object
+        """Registers a function to be called once before the first served request.
+
+        :param func: Function called
+        :type func: () -> object
         """
         self._before_first_request_funcs.append(func)
 
 
 class DebuggedJsonRpcApplication(DebuggedApplication):
-    """A jsonrpc-specific debugged application.
+    """A JSON-RPC-specific debugged application.
 
     This differs from DebuggedApplication since the normal debugger assumes you
     are hitting the endpoint from a web browser.
@@ -118,7 +115,6 @@ class DebuggedJsonRpcApplication(DebuggedApplication):
 
     NOTE: This should never be used in production because the user gets shell
     access in debug mode.
-
     """
     def __init__(self, app, **kwargs):
         """

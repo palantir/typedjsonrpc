@@ -25,17 +25,23 @@ typedjsonrpc...
 * allows return type checking
 * focuses on easy debugging
 
+These docs are also available on `Read the Docs <http://typedjsonrpc.readthedocs.org>`_.
+
 Using typedjsonrpc
 ==================
 Installation
 ------------
-Clone the repository and install typedjsonrpc::
+Clone the repository and install typedjsonrpc:
+
+.. code-block:: bash
 
     $ pip install git+ssh://git@github.com/palantir/typedjsonrpc.git
 
 Project setup
 -------------
-To include typedjsonrpc in your project, use::
+To include typedjsonrpc in your project, use:
+
+.. code-block:: python
 
     from typedjsonrpc.registry import Registry
     from typedjsonrpc.server import Server
@@ -51,7 +57,9 @@ also has a development mode that can be run using ``server.run(host, port)``.
 
 Example usage
 -------------
-Annotate your methods to make them accessible and provide type information::
+Annotate your methods to make them accessible and provide type information:
+
+.. code-block:: python
 
     @registry.method(returns=int, a=int, b=int)
     def add(a, b):
@@ -62,7 +70,9 @@ Annotate your methods to make them accessible and provide type information::
         return a + b
 
 The return type *has* to be declared using the ``returns`` keyword. For methods that don't return
-anything, you can use either ``type(None)`` or just ``None``::
+anything, you can use either ``type(None)`` or just ``None``:
+
+.. code-block:: python
 
     @registry.method(returns=type(None), a=str)
     def foo(a):
@@ -86,14 +96,18 @@ object      dict
 ==========  =====================================
 
 Your functions may also accept ``*args`` and ``**kwargs``, but you cannot declare their types. So
-the correct way to use these would be::
+the correct way to use these would be:
+
+.. code-block:: python
 
     @registry.method(a=str)
     def foo(a, *args, **kwargs):
         return a + str(args) + str(kwargs)
 
 To check that everything is running properly, try (assuming ``add`` is declared in your main
-module)::
+module):
+
+.. code-block:: bash
 
     $ curl -XPOST http://<host>:<port>/api -d @- <<EOF
     {
@@ -119,7 +133,9 @@ Batching
 --------
 You can send a list of JSON-RPC request objects as one request and will receive a list of JSON-RPC
 response objects in return. These response objects can be mapped back to the request objects using
-the ``id``. Here's an example of calling the ``add`` method with two sets of parameters::
+the ``id``. Here's an example of calling the ``add`` method with two sets of parameters:
+
+.. code-block:: bash
 
     $ curl -XPOST http://<host>:<port>/api -d @- <<EOF
     [
@@ -160,7 +176,9 @@ Debugging
 If you create the registry with the parameter ``debug=True``, you'll be able to use
 `werkzeug's debugger <http://werkzeug.pocoo.org/docs/0.10/debug/>`_. In that case, if there is an
 error during execution - e.g. you tried to use a string as one of the parameters for ``add`` - the
-response will contain an error object with a ``debug_url``::
+response will contain an error object with a ``debug_url``:
+
+.. code-block:: bash
 
     $ curl -XPOST http://<host>:<port>/api -d @- <<EOF
     {
@@ -188,3 +206,32 @@ response will contain an error object with a ``debug_url``::
     }
 
 This tells you to find the traceback interpreter at ``<host>:<port>/debug/1234567890``.
+
+Customizing type serialization
+------------------------------
+If you would like to serialize custom types, you can set the ``json_encoder`` and ``json_decoder``
+attributes on ``Server`` to your own custom ``json.JSONEncoder`` and ``json.JSONDecoder``. By
+default, we use the default encoder and decoder.
+
+Adding hooks before the first request
+-------------------------------------
+You can add functions to run before the first request is called. This can be useful for some
+special setup you need for your WSGI app. For example, you can register a function to print
+debugging information before your first request:
+
+.. code-block:: python
+
+    import datetime
+
+    from typedjsonrpc.registry import Registry
+    from typedjsonrpc.server import Server
+
+
+    registry = Registry()
+    server = Server()
+
+    def print_time():
+        now = datetime.datetime.now()
+        print("Handling first request at: {}".format(now))
+
+    server.register_before_first_request(print_time)
