@@ -16,6 +16,14 @@
 ============
 typedjsonrpc
 ============
++---------------------+------------------------------------------------------------+
+| Latest Release      | .. image:: https://badge.fury.io/py/typedjsonrpc.svg       |
+|                     |     :target: http://badge.fury.io/py/typedjsonrpc          |
++---------------------+------------------------------------------------------------+
+| Build Status        | .. image:: https://travis-ci.org/palantir/typedjsonrpc.svg |
+|                     |     :target: https://travis-ci.org/palantir/typedjsonrpc   |
++---------------------+------------------------------------------------------------+
+
 typedjsonrpc is a decorator-based `JSON-RPC <http://www.jsonrpc.org/specification>`_ library for
 Python that exposes parameter and return types. It is influenced by
 `Flask JSON-RPC <https://github.com/cenobites/flask-jsonrpc>`_ but has some key differences:
@@ -31,11 +39,11 @@ Using typedjsonrpc
 ==================
 Installation
 ------------
-Clone the repository and install typedjsonrpc:
+Use pip to install typedjsonrpc:
 
 .. code-block:: bash
 
-    $ pip install git+ssh://git@github.com/palantir/typedjsonrpc.git
+    $ pip install typedjsonrpc
 
 Project setup
 -------------
@@ -230,7 +238,7 @@ debugging information before your first request:
     from typedjsonrpc.server import Server
 
     registry = Registry()
-    server = Server()
+    server = Server(registry)
 
     def print_time():
         now = datetime.datetime.now()
