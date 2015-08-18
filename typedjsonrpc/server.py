@@ -49,6 +49,8 @@ class Server(object):
 
     :attribute registry: The registry for this server
     :type registry: typedjsonrpc.registry.Registry
+
+    .. versionadded:: 0.1.0
     """
 
     def __init__(self, registry, endpoint=DEFAULT_API_ENDPOINT_NAME):
@@ -96,7 +98,17 @@ class Server(object):
         return self.wsgi_app(environ, start_response)
 
     def run(self, host, port, **options):
-        """For debugging purposes, you can run this as a standalone server"""
+        """For debugging purposes, you can run this as a standalone server.
+
+
+        .. WARNING:: **Security vulnerability**
+
+            This uses :class:`DebuggedJsonRpcApplication` to assist debugging. If you want to use
+            this in production, you should run :class:`Server` as a standard WSGI app with
+            `uWSGI <https://uwsgi-docs.readthedocs.org/en/latest/>`_ or another similar WSGI server.
+
+        .. versionadded:: 0.1.0
+        """
         self.registry.debug = True
         debugged = DebuggedJsonRpcApplication(self, evalex=True)
         run_simple(host, port, debugged, use_reloader=True, **options)
@@ -118,6 +130,8 @@ class Server(object):
 
         :param func: Function called
         :type func: () -> object
+
+        .. versionadded:: 0.1.0
         """
         self._before_first_request_funcs.append(func)
 
@@ -128,17 +142,21 @@ class DebuggedJsonRpcApplication(DebuggedApplication):
     This differs from DebuggedApplication since the normal debugger assumes you
     are hitting the endpoint from a web browser.
 
-    A returned response will be JSON of the form: {"traceback_id": <id>} which
-    you can use to hit the endpoint http://<host>:<port>/debug/<traceback_id>.
+    A returned response will be JSON of the form: ``{"traceback_id": <id>}`` which
+    you can use to hit the endpoint ``http://<host>:<port>/debug/<traceback_id>``.
 
-    NOTE: This should never be used in production because the user gets shell
-    access in debug mode.
+    .. versionadded:: 0.1.0
+
+    .. WARNING:: **Security vulnerability**
+
+        This should never be used in production because users have arbitrary shell
+        access in debug mode.
     """
     def __init__(self, app, **kwargs):
         """
         :param app: The wsgi application to be debugged
         :type app: typedjsonrpc.server.Server
-        :param **kwargs:The arguments to pass to the DebuggedApplication
+        :param kwargs: The arguments to pass to the DebuggedApplication
         """
         super(DebuggedJsonRpcApplication, self).__init__(app, **kwargs)
         self._debug_map = Map([Rule("/debug/<int:traceback_id>", endpoint="debug")])
@@ -151,6 +169,8 @@ class DebuggedJsonRpcApplication(DebuggedApplication):
         :param start_response: The start_response function of the wsgi application
         :type start_response: (str, list[(str, str)]) -> None
         :rtype: generator[str]
+
+        .. versionadded:: 0.1.0
         """
         adapter = self._debug_map.bind_to_environ(environ)
         if adapter.test():
@@ -169,6 +189,8 @@ class DebuggedJsonRpcApplication(DebuggedApplication):
         :type start_response: (str, list[(str, str)]) -> NoneType
         :param traceback_id: The id of the traceback to inspect
         :type traceback_id: int
+
+        .. versionadded:: 0.1.0
         """
         if traceback_id not in self.app.registry.tracebacks:
             abort(404)

@@ -256,7 +256,7 @@ latex_documents = [
 man_pages = [
     ('index', 'typedjsonrpc',
      u'typedjsonrpc Documentation',
-     [u'Palantir'], 1)
+     [u'Palantir Technologies, Inc.'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -271,7 +271,7 @@ man_pages = [
 texinfo_documents = [
     ('index', 'typedjsonrpc',
      u'typedjsonrpc Documentation',
-     u'Palantir',
+     u'Palantir Technologies, Inc.',
      'typedjsonrpc',
      'Decorator-based JSON-RPC library for Python that exposes parameter and return types.',
      'Miscellaneous'),

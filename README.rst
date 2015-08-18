@@ -16,13 +16,23 @@
 ============
 typedjsonrpc
 ============
-+---------------------+------------------------------------------------------------+
-| Latest Release      | .. image:: https://badge.fury.io/py/typedjsonrpc.svg       |
-|                     |     :target: http://badge.fury.io/py/typedjsonrpc          |
-+---------------------+------------------------------------------------------------+
-| Build Status        | .. image:: https://travis-ci.org/palantir/typedjsonrpc.svg |
-|                     |     :target: https://travis-ci.org/palantir/typedjsonrpc   |
-+---------------------+------------------------------------------------------------+
+.. image:: https://img.shields.io/pypi/status/typedjsonrpc.svg
+     :target: https://img.shields.io/pypi/status/typedjsonrpc
+
+.. image:: https://img.shields.io/pypi/l/typedjsonrpc.svg
+     :target: https://img.shields.io/pypi/l/typedjsonrpc
+
+.. image:: https://img.shields.io/pypi/pyversions/typedjsonrpc.svg
+     :target: https://img.shields.io/pypi/pyversions/typedjsonrpc
+
+.. image:: https://img.shields.io/pypi/wheel/typedjsonrpc.svg
+     :target: https://img.shields.io/pypi/wheel/typedjsonrpc
+
+.. image:: https://badge.fury.io/py/typedjsonrpc.svg
+     :target: http://badge.fury.io/py/typedjsonrpc
+
+.. image:: https://travis-ci.org/palantir/typedjsonrpc.svg
+     :target: https://travis-ci.org/palantir/typedjsonrpc
 
 typedjsonrpc is a decorator-based `JSON-RPC <http://www.jsonrpc.org/specification>`_ library for
 Python that exposes parameter and return types. It is influenced by

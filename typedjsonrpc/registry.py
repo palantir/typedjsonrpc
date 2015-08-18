@@ -36,17 +36,21 @@ class Registry(object):
     :type debug: bool
     :attribute tracebacks: Tracebacks for debugging
     :type tracebacks: dict[int, werkzeug.debug.tbtools.Traceback]
+
+    .. versionadded:: 0.1.0
     """
 
     json_encoder = json.JSONEncoder()
-    """The JSON encoder to use.  Defaults to `json.JSONEncoder`
+    """The JSON encoder to use.  Defaults to :class:`json.JSONEncoder`
 
+    .. versionadded:: 0.1.0
     .. versionchanged:: 0.2.0 Changed from class to instance
     """
 
     json_decoder = json.JSONDecoder()
-    """The JSON decoder to use. Defaults to `json.JSONDecoder`
+    """The JSON decoder to use. Defaults to :class:`json.JSONDecoder`
 
+    .. versionadded:: 0.1.0
     .. versionchanged:: 0.2.0 Changed from class to instance
     """
 
@@ -75,6 +79,8 @@ class Registry(object):
         :type request: werkzeug.wrappers.Request
         :return: json output of the corresponding method
         :rtype: str
+
+        .. versionadded:: 0.1.0
         """
         def _wrapped():
             messages = self._get_request_messages(request)
@@ -172,7 +178,9 @@ class Registry(object):
         :param method: The method to register
         :type method: function
         :param method_signature: The method signature for the given function
-        :type method_signature: MethodSignature or None
+        :type method_signature: MethodSignature | None
+
+        .. versionadded:: 0.1.0
         """
         if inspect.ismethod(method):
             raise Exception("typedjsonrpc does not support making class methods into endpoints")
@@ -192,6 +200,8 @@ class Registry(object):
         :type returns: type
         :param parameter_types: The types of the method's parameters
         :type parameter_types: dict[str,type]
+
+        .. versionadded:: 0.1.0
         """
         @wrapt.decorator
         def type_check_wrapper(method, instance, args, kwargs):
@@ -266,6 +276,8 @@ class Registry(object):
 
         :return: Description
         :rtype: dict[str, object]
+
+        .. versionadded:: 0.1.0
         """
         return {
             "methods": [method_info.describe()
