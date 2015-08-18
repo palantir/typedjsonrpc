@@ -20,14 +20,28 @@ from threading import Lock
 
 from werkzeug.debug import DebuggedApplication
 from werkzeug.exceptions import abort
+from werkzeug.local import Local, LocalManager, LocalProxy
 from werkzeug.serving import run_simple
 from werkzeug.routing import Map, Rule
 from werkzeug.wrappers import Request, Response
 
-__all__ = ["Server", "DebuggedJsonRpcApplication"]
+__all__ = ["Server", "DebuggedJsonRpcApplication", "current_request"]
 
 
 DEFAULT_API_ENDPOINT_NAME = "/api"
+
+_CURRENT_REQUEST_KEY = "current_request"
+_local = Local()  # pylint: disable=invalid-name
+_LOCAL_MANAGER = LocalManager([_local])
+
+current_request = LocalProxy(_local, _CURRENT_REQUEST_KEY)  # pylint: disable=invalid-name
+"""A thread-local which stores the current request object when dispatching requests for
+:class:`Server`.
+
+Stores a :class:`werkzeug.wrappers.Request`.
+
+.. versionadded:: 0.2.0
+"""
 
 
 class Server(object):
@@ -70,9 +84,13 @@ class Server(object):
 
     def wsgi_app(self, environ, start_response):
         """A basic WSGI app"""
-        request = Request(environ)
-        response = self._dispatch_request(request)
-        return response(environ, start_response)
+        @_LOCAL_MANAGER.middleware
+        def _wrapped_app(environ, start_response):
+            request = Request(environ)
+            setattr(_local, _CURRENT_REQUEST_KEY, request)
+            response = self._dispatch_request(request)
+            return response(environ, start_response)
+        return _wrapped_app(environ, start_response)
 
     def __call__(self, environ, start_response):
         return self.wsgi_app(environ, start_response)

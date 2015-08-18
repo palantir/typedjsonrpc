@@ -207,6 +207,9 @@ response will contain an error object with a ``debug_url``:
 
 This tells you to find the traceback interpreter at ``<host>:<port>/debug/1234567890``.
 
+Additional features
+===================
+
 Customizing type serialization
 ------------------------------
 If you would like to serialize custom types, you can set the ``json_encoder`` and ``json_decoder``
@@ -226,7 +229,6 @@ debugging information before your first request:
     from typedjsonrpc.registry import Registry
     from typedjsonrpc.server import Server
 
-
     registry = Registry()
     server = Server()
 
@@ -235,3 +237,26 @@ debugging information before your first request:
         print("Handling first request at: {}".format(now))
 
     server.register_before_first_request(print_time)
+
+Accessing the HTTP request from JSON-RPC methods
+------------------------------------------------
+In some situations, you may want to access the HTTP request from your JSON-RPC method. For example,
+you could need to perform logic based on headers in the request. In the :mod:`typedjsonrpc.server`
+module, there is a special :attr:`typedjsonrpc.server.current_request` attribute which allows you to
+access the HTTP request which was used to call the current method.
+
+.. warning::
+
+    ``current_request`` is implemented as a thread-local. If you attempt to call
+    ``Server.wsgi_app`` from ``Registry.method``, then ``current_request`` *will be overriden in*
+    *that thread*.
+
+Example:
+
+.. code-block:: python
+
+    from typedjsonrpc.server import current_request
+
+    @registry.method(returns=list)
+    def get_headers():
+        return list(current_request.headers)
