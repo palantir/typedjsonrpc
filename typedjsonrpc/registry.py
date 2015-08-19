@@ -38,10 +38,10 @@ class Registry(object):
     """
 
     json_encoder = json.JSONEncoder()
-    """The JSON encoder class to use.  Defaults to :class:`json.JSONEncoder`"""
+    """The JSON encoder to use.  Defaults to `json.JSONEncoder`"""
 
     json_decoder = json.JSONDecoder()
-    """The JSON decoder class to use. Defaults to :class:`json.JSONDecoder`"""
+    """The JSON decoder to use. Defaults to `json.JSONDecoder`"""
 
     def __init__(self, debug=False):
         """
