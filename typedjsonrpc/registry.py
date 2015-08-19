@@ -37,10 +37,10 @@ class Registry(object):
     :type tracebacks: dict[int, werkzeug.debug.tbtools.Traceback]
     """
 
-    json_encoder = json.JSONEncoder
+    json_encoder = json.JSONEncoder()
     """The JSON encoder class to use.  Defaults to :class:`json.JSONEncoder`"""
 
-    json_decoder = json.JSONDecoder
+    json_decoder = json.JSONDecoder()
     """The JSON decoder class to use. Defaults to :class:`json.JSONDecoder`"""
 
     def __init__(self, debug=False):
@@ -82,7 +82,7 @@ class Registry(object):
 
         result = self._handle_exceptions(_wrapped)
         if result is not None:
-            return json.dumps(result, cls=self.json_encoder)
+            return self.json_encoder.encode(result)
 
     def _dispatch_and_handle_errors(self, msg):
         is_notification = isinstance(msg, dict) and "id" not in msg
@@ -274,7 +274,7 @@ class Registry(object):
         """
         data = request.get_data(as_text=True)
         try:
-            msg = json.loads(data, cls=self.json_decoder)
+            msg = self.json_decoder.decode(data)
         except Exception:
             raise ParseError("Could not parse request data '{}'".format(data))
         if isinstance(msg, list):
