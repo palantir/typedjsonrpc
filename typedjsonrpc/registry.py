@@ -115,7 +115,7 @@ class Registry(object):
                     debug_url = self._store_traceback()
                 else:
                     debug_url = None
-                new_error = InternalError.from_error(exc, debug_url)
+                new_error = InternalError.from_error(exc, self.json_encoder, debug_url)
                 return Registry._create_error_response(msg_id, new_error)
 
     def _store_traceback(self):

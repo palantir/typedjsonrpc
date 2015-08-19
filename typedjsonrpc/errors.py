@@ -67,13 +67,23 @@ class InternalError(Error):
     message = "Internal error"
 
     @staticmethod
-    def from_error(exc, debug_url=None):
+    def from_error(exc, json_encoder, debug_url=None):
         """Wraps another Exception in an InternalError.
 
         :type exc: Exception
+        :type json_encoder: json.JSONEncoder
+        :type debug_url: str | None
         :rtype: InternalError
+
+        .. versionchanged:: 0.2.0
+            Stringifies non-JSON-serializable objects
         """
         data = exc.__dict__.copy()
+        for key, value in data.items():
+            try:
+                json_encoder.encode(value)
+            except TypeError:
+                data[key] = repr(value)
         data["traceback"] = "".join(traceback.format_exception(*sys.exc_info()))
         if debug_url is not None:
             data["debug_url"] = debug_url
