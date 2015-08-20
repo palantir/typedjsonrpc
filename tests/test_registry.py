@@ -621,7 +621,6 @@ class TestDispatch(object):
         response = json.loads(registry.dispatch(fake_request))
         assert isinstance(response, dict)
         assert "error" in response
-        assert response["error"]
         assert isinstance(response["error"]["data"]["random"], six.string_types)
         assert NonSerializableObject.__name__ in response["error"]["data"]["random"]
 
@@ -644,7 +643,6 @@ class TestDispatch(object):
         response = json.loads(registry.dispatch(fake_request))
         assert isinstance(response, dict)
         assert "error" in response
-        assert response["error"]
         assert random_val == response["error"]["data"]["random"]
 
 
