@@ -625,6 +625,28 @@ class TestDispatch(object):
         assert isinstance(response["error"]["data"]["random"], six.string_types)
         assert NonSerializableObject.__name__ in response["error"]["data"]["random"]
 
+    def test_serializable_exception(self):
+        registry = Registry()
+
+        random_val = {"foo": "bar"}
+
+        @registry.method(returns=None)
+        def raise_exception():
+            e = Exception()
+            e.random = random_val
+            raise e
+
+        fake_request = self._create_fake_request({
+            "jsonrpc": "2.0",
+            "method": "test_registry.raise_exception",
+            "id": "bogus",
+        })
+        response = json.loads(registry.dispatch(fake_request))
+        assert isinstance(response, dict)
+        assert "error" in response
+        assert response["error"]
+        assert random_val == response["error"]["data"]["random"]
+
 
 def test_describe():
     registry = Registry()

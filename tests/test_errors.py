@@ -14,19 +14,29 @@
 # limitations under the License.
 
 import json
+import sys
 
 from typedjsonrpc.errors import InternalError
 
 
 class TestInternalError(object):
 
-    def test_from_error(self):
+    def test_from_error_not_serializable(self):
         class NonSerializableObject(object):
             pass
         try:
             e = Exception()
             e.random = NonSerializableObject()
             raise e
-        except Exception as exc:
-            wrapped_exc = InternalError.from_error(exc, json.JSONEncoder)
+        except Exception:
+            wrapped_exc = InternalError.from_error(sys.exc_info(), json.JSONEncoder)
+            json.dumps(wrapped_exc.as_error_object())
+
+    def test_from_error_serializable(self):
+        try:
+            e = Exception()
+            e.random = {"foo": "bar"}
+            raise e
+        except Exception:
+            wrapped_exc = InternalError.from_error(sys.exc_info(), json.JSONEncoder)
             json.dumps(wrapped_exc.as_error_object())
