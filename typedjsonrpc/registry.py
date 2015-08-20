@@ -17,6 +17,7 @@
 import inspect
 import json
 import six
+import sys
 import typedjsonrpc.parameter_checker as parameter_checker
 import wrapt
 
@@ -111,11 +112,12 @@ class Registry(object):
                 return Registry._create_error_response(msg_id, exc)
         except Exception as exc:  # pylint: disable=broad-except
             if not is_notification:
+                exc_info = sys.exc_info()
                 if self.debug:
                     debug_url = self._store_traceback()
                 else:
                     debug_url = None
-                new_error = InternalError.from_error(exc, debug_url)
+                new_error = InternalError.from_error(exc_info, self.json_encoder, debug_url)
                 return Registry._create_error_response(msg_id, new_error)
 
     def _store_traceback(self):
