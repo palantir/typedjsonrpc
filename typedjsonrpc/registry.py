@@ -38,10 +38,16 @@ class Registry(object):
     """
 
     json_encoder = json.JSONEncoder()
-    """The JSON encoder to use.  Defaults to `json.JSONEncoder`"""
+    """The JSON encoder to use.  Defaults to `json.JSONEncoder`
+
+    .. versionchanged:: 0.2.0 Changed from class to instance
+    """
 
     json_decoder = json.JSONDecoder()
-    """The JSON decoder to use. Defaults to `json.JSONDecoder`"""
+    """The JSON decoder to use. Defaults to `json.JSONDecoder`
+
+    .. versionchanged:: 0.2.0 Changed from class to instance
+    """
 
     def __init__(self, debug=False):
         """
