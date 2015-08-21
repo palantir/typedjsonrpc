@@ -15,11 +15,13 @@
 
 """Error classes for typedjsonrpc."""
 import traceback
-import sys
 
 
 class Error(Exception):
-    """Base class for all errors."""
+    """Base class for all errors.
+
+    .. versionadded:: 0.1.0
+    """
     code = 0
     message = None
     data = None
@@ -29,7 +31,10 @@ class Error(Exception):
         self.data = data
 
     def as_error_object(self):
-        """Turns the error into an error object."""
+        """Turns the error into an error object.
+
+        .. versionadded:: 0.1.0
+        """
         return {
             "code": self.code,
             "message": self.message,
@@ -38,55 +43,89 @@ class Error(Exception):
 
 
 class ParseError(Error):
-    """Invalid JSON was received by the server / JSON could not be parsed."""
+    """Invalid JSON was received by the server / JSON could not be parsed.
+
+    .. versionadded:: 0.1.0
+    """
     code = -32700
     message = "Parse error"
 
 
 class InvalidRequestError(Error):
-    """The JSON sent is not a valid request object."""
+    """The JSON sent is not a valid request object.
+
+    .. versionadded:: 0.1.0
+    """
     code = -32600
     message = "Invalid request"
 
 
 class MethodNotFoundError(Error):
-    """The method does not exist."""
+    """The method does not exist.
+
+    .. versionadded:: 0.1.0
+    """
     code = -32601
     message = "Method not found"
 
 
 class InvalidParamsError(Error):
-    """Invalid method parameter(s)."""
+    """Invalid method parameter(s).
+
+    .. versionadded:: 0.1.0
+    """
     code = -32602
     message = "Invalid params"
 
 
 class InternalError(Error):
-    """Internal JSON-RPC error."""
+    """Internal JSON-RPC error.
+
+    .. versionadded:: 0.1.0
+    """
     code = -32603
     message = "Internal error"
 
     @staticmethod
-    def from_error(exc, debug_url=None):
+    def from_error(exc_info, json_encoder, debug_url=None):
         """Wraps another Exception in an InternalError.
 
-        :type exc: Exception
+        :param exc_info: The exception info for the wrapped exception
+        :type exc_info: (type, object, traceback)
+        :type json_encoder: json.JSONEncoder
+        :type debug_url: str | None
         :rtype: InternalError
+
+        .. versionadded:: 0.1.0
+        .. versionchanged:: 0.2.0
+            Stringifies non-JSON-serializable objects
         """
+        exc = exc_info[1]
         data = exc.__dict__.copy()
-        data["traceback"] = "".join(traceback.format_exception(*sys.exc_info()))
+        for key, value in data.items():
+            try:
+                json_encoder.encode(value)
+            except TypeError:
+                data[key] = repr(value)
+        data["traceback"] = "".join(traceback.format_exception(*exc_info))
         if debug_url is not None:
             data["debug_url"] = debug_url
         return InternalError(data)
 
 
 class ServerError(Error):
-    """Something else went wrong."""
+    """Something else went wrong.
+
+    .. versionadded:: 0.1.0
+    """
     code = -32000
     message = "Server error"
 
 
 class InvalidReturnTypeError(Error):
-    """Return type does not match expected type."""
+    """Return type does not match expected type.
+
+    .. versionadded:: 0.1.0
+    """
     code = -32001
     message = "Invalid return type"

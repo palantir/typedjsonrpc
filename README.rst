@@ -16,6 +16,24 @@
 ============
 typedjsonrpc
 ============
+.. image:: https://img.shields.io/pypi/status/typedjsonrpc.svg
+     :target: https://img.shields.io/pypi/status/typedjsonrpc
+
+.. image:: https://img.shields.io/pypi/l/typedjsonrpc.svg
+     :target: https://img.shields.io/pypi/l/typedjsonrpc
+
+.. image:: https://img.shields.io/pypi/pyversions/typedjsonrpc.svg
+     :target: https://img.shields.io/pypi/pyversions/typedjsonrpc
+
+.. image:: https://img.shields.io/pypi/wheel/typedjsonrpc.svg
+     :target: https://img.shields.io/pypi/wheel/typedjsonrpc
+
+.. image:: https://badge.fury.io/py/typedjsonrpc.svg
+     :target: http://badge.fury.io/py/typedjsonrpc
+
+.. image:: https://travis-ci.org/palantir/typedjsonrpc.svg
+     :target: https://travis-ci.org/palantir/typedjsonrpc
+
 typedjsonrpc is a decorator-based `JSON-RPC <http://www.jsonrpc.org/specification>`_ library for
 Python that exposes parameter and return types. It is influenced by
 `Flask JSON-RPC <https://github.com/cenobites/flask-jsonrpc>`_ but has some key differences:
@@ -31,11 +49,11 @@ Using typedjsonrpc
 ==================
 Installation
 ------------
-Clone the repository and install typedjsonrpc:
+Use pip to install typedjsonrpc:
 
 .. code-block:: bash
 
-    $ pip install git+ssh://git@github.com/palantir/typedjsonrpc.git
+    $ pip install typedjsonrpc
 
 Project setup
 -------------
@@ -207,11 +225,14 @@ response will contain an error object with a ``debug_url``:
 
 This tells you to find the traceback interpreter at ``<host>:<port>/debug/1234567890``.
 
+Additional features
+===================
+
 Customizing type serialization
 ------------------------------
 If you would like to serialize custom types, you can set the ``json_encoder`` and ``json_decoder``
-attributes on ``Server`` to your own custom ``json.JSONEncoder`` and ``json.JSONDecoder``. By
-default, we use the default encoder and decoder.
+attributes on ``Server`` to your own custom :class:`json.JSONEncoder` and :class:`json.JSONDecoder`
+instance. By default, we use the default encoder and decoder.
 
 Adding hooks before the first request
 -------------------------------------
@@ -226,12 +247,34 @@ debugging information before your first request:
     from typedjsonrpc.registry import Registry
     from typedjsonrpc.server import Server
 
-
     registry = Registry()
-    server = Server()
+    server = Server(registry)
 
     def print_time():
         now = datetime.datetime.now()
         print("Handling first request at: {}".format(now))
 
     server.register_before_first_request(print_time)
+
+Accessing the HTTP request from JSON-RPC methods
+------------------------------------------------
+In some situations, you may want to access the HTTP request from your JSON-RPC method. For example,
+you could need to perform logic based on headers in the request. In the :mod:`typedjsonrpc.server`
+module, there is a special :attr:`typedjsonrpc.server.current_request` attribute which allows you to
+access the HTTP request which was used to call the current method.
+
+.. warning::
+
+    ``current_request`` is implemented as a thread-local. If you attempt to call
+    ``Server.wsgi_app`` from ``Registry.method``, then ``current_request`` *will be overriden in*
+    *that thread*.
+
+Example:
+
+.. code-block:: python
+
+    from typedjsonrpc.server import current_request
+
+    @registry.method(returns=list)
+    def get_headers():
+        return list(current_request.headers)

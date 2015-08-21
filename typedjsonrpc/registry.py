@@ -17,6 +17,7 @@
 import inspect
 import json
 import six
+import sys
 import typedjsonrpc.parameter_checker as parameter_checker
 import wrapt
 
@@ -35,13 +36,23 @@ class Registry(object):
     :type debug: bool
     :attribute tracebacks: Tracebacks for debugging
     :type tracebacks: dict[int, werkzeug.debug.tbtools.Traceback]
+
+    .. versionadded:: 0.1.0
     """
 
-    json_encoder = json.JSONEncoder
-    """The JSON encoder class to use.  Defaults to :class:`json.JSONEncoder`"""
+    json_encoder = json.JSONEncoder()
+    """The JSON encoder to use.  Defaults to :class:`json.JSONEncoder`
 
-    json_decoder = json.JSONDecoder
-    """The JSON decoder class to use. Defaults to :class:`json.JSONDecoder`"""
+    .. versionadded:: 0.1.0
+    .. versionchanged:: 0.2.0 Changed from class to instance
+    """
+
+    json_decoder = json.JSONDecoder()
+    """The JSON decoder to use. Defaults to :class:`json.JSONDecoder`
+
+    .. versionadded:: 0.1.0
+    .. versionchanged:: 0.2.0 Changed from class to instance
+    """
 
     def __init__(self, debug=False):
         """
@@ -68,6 +79,8 @@ class Registry(object):
         :type request: werkzeug.wrappers.Request
         :return: json output of the corresponding method
         :rtype: str
+
+        .. versionadded:: 0.1.0
         """
         def _wrapped():
             messages = self._get_request_messages(request)
@@ -82,7 +95,7 @@ class Registry(object):
 
         result = self._handle_exceptions(_wrapped)
         if result is not None:
-            return json.dumps(result, cls=self.json_encoder)
+            return self.json_encoder.encode(result)
 
     def _dispatch_and_handle_errors(self, msg):
         is_notification = isinstance(msg, dict) and "id" not in msg
@@ -105,11 +118,12 @@ class Registry(object):
                 return Registry._create_error_response(msg_id, exc)
         except Exception as exc:  # pylint: disable=broad-except
             if not is_notification:
+                exc_info = sys.exc_info()
                 if self.debug:
                     debug_url = self._store_traceback()
                 else:
                     debug_url = None
-                new_error = InternalError.from_error(exc, debug_url)
+                new_error = InternalError.from_error(exc_info, self.json_encoder, debug_url)
                 return Registry._create_error_response(msg_id, new_error)
 
     def _store_traceback(self):
@@ -164,7 +178,9 @@ class Registry(object):
         :param method: The method to register
         :type method: function
         :param method_signature: The method signature for the given function
-        :type method_signature: MethodSignature or None
+        :type method_signature: MethodSignature | None
+
+        .. versionadded:: 0.1.0
         """
         if inspect.ismethod(method):
             raise Exception("typedjsonrpc does not support making class methods into endpoints")
@@ -183,7 +199,9 @@ class Registry(object):
         :param returns: The method's return type
         :type returns: type
         :param parameter_types: The types of the method's parameters
-        :type parameter_types: dict[str,type]
+        :type parameter_types: dict[str, type]
+
+        .. versionadded:: 0.1.0
         """
         @wrapt.decorator
         def type_check_wrapper(method, instance, args, kwargs):
@@ -258,6 +276,8 @@ class Registry(object):
 
         :return: Description
         :rtype: dict[str, object]
+
+        .. versionadded:: 0.1.0
         """
         return {
             "methods": [method_info.describe()
@@ -274,7 +294,7 @@ class Registry(object):
         """
         data = request.get_data(as_text=True)
         try:
-            msg = json.loads(data, cls=self.json_decoder)
+            msg = self.json_decoder.decode(data)
         except Exception:
             raise ParseError("Could not parse request data '{}'".format(data))
         if isinstance(msg, list):

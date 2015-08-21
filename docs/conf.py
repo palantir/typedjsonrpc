@@ -55,7 +55,7 @@ import typedjsonrpc
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode', 'sphinx.ext.intersphinx']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -71,7 +71,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'typedjsonrpc'
-copyright = u'Copyright 2015, Palantir.'
+copyright = u'2015, Palantir Technologies, Inc'
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
@@ -256,7 +256,7 @@ latex_documents = [
 man_pages = [
     ('index', 'typedjsonrpc',
      u'typedjsonrpc Documentation',
-     [u'Palantir'], 1)
+     [u'Palantir Technologies, Inc.'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -271,7 +271,7 @@ man_pages = [
 texinfo_documents = [
     ('index', 'typedjsonrpc',
      u'typedjsonrpc Documentation',
-     u'Palantir',
+     u'Palantir Technologies, Inc.',
      'typedjsonrpc',
      'Decorator-based JSON-RPC library for Python that exposes parameter and return types.',
      'Miscellaneous'),
@@ -288,3 +288,8 @@ texinfo_documents = [
 
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
+
+intersphinx_mapping = {
+    'https://docs.python.org/3.4': None,
+    'http://werkzeug.pocoo.org/docs/0.10': None
+}

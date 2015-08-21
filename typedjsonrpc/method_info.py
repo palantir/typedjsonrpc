@@ -17,7 +17,7 @@
 
 from collections import namedtuple
 
-__all__ = ["MethodInfo"]
+__all__ = ["MethodInfo", "MethodSignature"]
 
 
 class MethodInfo(namedtuple("MethodInfo", ["name", "method", "signature"])):
@@ -59,7 +59,7 @@ class MethodInfo(namedtuple("MethodInfo", ["name", "method", "signature"])):
 
         This handles the special case of ``None`` which allows ``type(None)`` also.
 
-        :rtype: str or None
+        :rtype: str | None
         """
         return_type = self.signature.return_type
         none_type = type(None)

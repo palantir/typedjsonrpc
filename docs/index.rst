@@ -22,7 +22,8 @@ Contents:
    :maxdepth: 3
 
    readme
-   modules
+   api
+   release_notes
 
 Indices and tables
 ==================

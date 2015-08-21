@@ -14,7 +14,7 @@
 # limitations under the License.
 
 from typedjsonrpc.registry import Registry
-from typedjsonrpc.server import DebuggedJsonRpcApplication, Server
+from typedjsonrpc.server import current_request, DebuggedJsonRpcApplication, Server, Response
 from werkzeug.exceptions import HTTPException
 import pytest
 import six
@@ -140,3 +140,41 @@ class TestServer(object):
         server(environ, mock_start_response)
 
         mock_start.assert_called_once_with()
+
+
+class TestCurrentRequest(object):
+    def test_current_request_set(self):
+        registry = Registry()
+        server = Server(registry)
+
+        def fake_dispatch_request(request):
+            assert current_request == request
+            return Response()
+        server._dispatch_request = fake_dispatch_request
+        environ = {
+            "SERVER_NAME": "localhost",
+            "SERVER_PORT": "5060",
+            "PATH_INFO": "/foo",
+            "REQUEST_METHOD": "POST",
+            "wsgi.url_scheme": "http",
+        }
+        mock_start_response = mock.Mock()
+        server(environ, mock_start_response)
+
+    def test_current_request_passed_to_registry(self):
+        registry = Registry()
+        server = Server(registry)
+
+        def fake_dispatch(request):
+            assert current_request == request
+            return Response()
+        registry.dispatch = fake_dispatch
+        environ = {
+            "SERVER_NAME": "localhost",
+            "SERVER_PORT": "5060",
+            "PATH_INFO": "/api",
+            "REQUEST_METHOD": "POST",
+            "wsgi.url_scheme": "http",
+        }
+        mock_start_response = mock.Mock()
+        server(environ, mock_start_response)
