@@ -13,31 +13,41 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-=======
-Modules
-=======
+=============
+API Reference
+=============
 
 Errors
 ======
 .. automodule:: typedjsonrpc.errors
    :members:
+   :special-members:
+   :exclude-members: __weakref__
 
 Method Info
 ===========
 .. automodule:: typedjsonrpc.method_info
    :members:
+   :special-members:
+   :exclude-members: __weakref__
 
 Parameter Checker
 =================
 .. automodule:: typedjsonrpc.parameter_checker
    :members:
+   :special-members:
+   :exclude-members: __weakref__
 
 Registry
 ========
 .. automodule:: typedjsonrpc.registry
    :members:
+   :special-members:
+   :exclude-members: __weakref__
 
 Server
 ======
 .. automodule:: typedjsonrpc.server
    :members:
+   :special-members:
+   :exclude-members: __weakref__

@@ -18,7 +18,10 @@ import traceback
 
 
 class Error(Exception):
-    """Base class for all errors."""
+    """Base class for all errors.
+
+    .. versionadded:: 0.1.0
+    """
     code = 0
     message = None
     data = None
@@ -28,7 +31,10 @@ class Error(Exception):
         self.data = data
 
     def as_error_object(self):
-        """Turns the error into an error object."""
+        """Turns the error into an error object.
+
+        .. versionadded:: 0.1.0
+        """
         return {
             "code": self.code,
             "message": self.message,
@@ -37,31 +43,46 @@ class Error(Exception):
 
 
 class ParseError(Error):
-    """Invalid JSON was received by the server / JSON could not be parsed."""
+    """Invalid JSON was received by the server / JSON could not be parsed.
+
+    .. versionadded:: 0.1.0
+    """
     code = -32700
     message = "Parse error"
 
 
 class InvalidRequestError(Error):
-    """The JSON sent is not a valid request object."""
+    """The JSON sent is not a valid request object.
+
+    .. versionadded:: 0.1.0
+    """
     code = -32600
     message = "Invalid request"
 
 
 class MethodNotFoundError(Error):
-    """The method does not exist."""
+    """The method does not exist.
+
+    .. versionadded:: 0.1.0
+    """
     code = -32601
     message = "Method not found"
 
 
 class InvalidParamsError(Error):
-    """Invalid method parameter(s)."""
+    """Invalid method parameter(s).
+
+    .. versionadded:: 0.1.0
+    """
     code = -32602
     message = "Invalid params"
 
 
 class InternalError(Error):
-    """Internal JSON-RPC error."""
+    """Internal JSON-RPC error.
+
+    .. versionadded:: 0.1.0
+    """
     code = -32603
     message = "Internal error"
 
@@ -75,6 +96,7 @@ class InternalError(Error):
         :type debug_url: str | None
         :rtype: InternalError
 
+        .. versionadded:: 0.1.0
         .. versionchanged:: 0.2.0
             Stringifies non-JSON-serializable objects
         """
@@ -92,12 +114,18 @@ class InternalError(Error):
 
 
 class ServerError(Error):
-    """Something else went wrong."""
+    """Something else went wrong.
+
+    .. versionadded:: 0.1.0
+    """
     code = -32000
     message = "Server error"
 
 
 class InvalidReturnTypeError(Error):
-    """Return type does not match expected type."""
+    """Return type does not match expected type.
+
+    .. versionadded:: 0.1.0
+    """
     code = -32001
     message = "Invalid return type"

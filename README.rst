@@ -16,6 +16,24 @@
 ============
 typedjsonrpc
 ============
+.. image:: https://img.shields.io/pypi/status/typedjsonrpc.svg
+     :target: https://img.shields.io/pypi/status/typedjsonrpc
+
+.. image:: https://img.shields.io/pypi/l/typedjsonrpc.svg
+     :target: https://img.shields.io/pypi/l/typedjsonrpc
+
+.. image:: https://img.shields.io/pypi/pyversions/typedjsonrpc.svg
+     :target: https://img.shields.io/pypi/pyversions/typedjsonrpc
+
+.. image:: https://img.shields.io/pypi/wheel/typedjsonrpc.svg
+     :target: https://img.shields.io/pypi/wheel/typedjsonrpc
+
+.. image:: https://badge.fury.io/py/typedjsonrpc.svg
+     :target: http://badge.fury.io/py/typedjsonrpc
+
+.. image:: https://travis-ci.org/palantir/typedjsonrpc.svg
+     :target: https://travis-ci.org/palantir/typedjsonrpc
+
 typedjsonrpc is a decorator-based `JSON-RPC <http://www.jsonrpc.org/specification>`_ library for
 Python that exposes parameter and return types. It is influenced by
 `Flask JSON-RPC <https://github.com/cenobites/flask-jsonrpc>`_ but has some key differences:
@@ -31,11 +49,11 @@ Using typedjsonrpc
 ==================
 Installation
 ------------
-Clone the repository and install typedjsonrpc:
+Use pip to install typedjsonrpc:
 
 .. code-block:: bash
 
-    $ pip install git+ssh://git@github.com/palantir/typedjsonrpc.git
+    $ pip install typedjsonrpc
 
 Project setup
 -------------
@@ -213,8 +231,8 @@ Additional features
 Customizing type serialization
 ------------------------------
 If you would like to serialize custom types, you can set the ``json_encoder`` and ``json_decoder``
-attributes on ``Server`` to your own custom ``json.JSONEncoder`` and ``json.JSONDecoder`` instance.
-By default, we use the default encoder and decoder.
+attributes on ``Server`` to your own custom :class:`json.JSONEncoder` and :class:`json.JSONDecoder`
+instance. By default, we use the default encoder and decoder.
 
 Adding hooks before the first request
 -------------------------------------
@@ -230,7 +248,7 @@ debugging information before your first request:
     from typedjsonrpc.server import Server
 
     registry = Registry()
-    server = Server()
+    server = Server(registry)
 
     def print_time():
         now = datetime.datetime.now()
