@@ -231,8 +231,8 @@ Additional features
 Customizing type serialization
 ------------------------------
 If you would like to serialize custom types, you can set the ``json_encoder`` and ``json_decoder``
-attributes on ``Server`` to your own custom ``json.JSONEncoder`` and ``json.JSONDecoder`` instance.
-By default, we use the default encoder and decoder.
+attributes on ``Server`` to your own custom :class:`json.JSONEncoder` and :class:`json.JSONDecoder`
+instance. By default, we use the default encoder and decoder.
 
 Adding hooks before the first request
 -------------------------------------
