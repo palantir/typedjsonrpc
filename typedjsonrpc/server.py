@@ -55,9 +55,9 @@ class Server(object):
 
     def __init__(self, registry, endpoint=DEFAULT_API_ENDPOINT_NAME):
         """
-        :param registry: The jsonrpc registry to use
+        :param registry: The JSON-RPC registry to use
         :type registry: typedjsonrpc.registry.Registry
-        :param endpoint: (optional) The endpoint to publish jsonrpc endpoints. Default "/api".
+        :param endpoint: The endpoint to publish JSON-RPC endpoints. Default "/api".
         :type endpoint: str
         """
         self.registry = registry
@@ -99,7 +99,6 @@ class Server(object):
 
     def run(self, host, port, **options):
         """For debugging purposes, you can run this as a standalone server.
-
 
         .. WARNING:: **Security vulnerability**
 

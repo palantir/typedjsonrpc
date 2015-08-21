@@ -199,7 +199,7 @@ class Registry(object):
         :param returns: The method's return type
         :type returns: type
         :param parameter_types: The types of the method's parameters
-        :type parameter_types: dict[str,type]
+        :type parameter_types: dict[str, type]
 
         .. versionadded:: 0.1.0
         """

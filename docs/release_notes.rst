@@ -24,14 +24,17 @@ This is a small update from the last release based on usage.
 Features
 ^^^^^^^^
 * Added ability to access the current request in method call
+* Allowed more flexibility in JSON serialization
 
 Bugfixes
 ^^^^^^^^
-* Exceptions which are not JSON-serializable are now converted to strings using ``repr`` rather than
-  failing serialization
+* Exceptions which are not JSON-serializable are now converted to strings using :func:`repr` rather
+  than failing serialization
 
 Backwards compatibility breaks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+* :attr:`typedjsonrpc.registry.Registry.json_encoder` and
+  :attr:`typedjsonrpc.registry.Registry.json_decoder` are now instances rather than class objects
 
 0.1.0
 -----

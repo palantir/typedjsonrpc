@@ -57,7 +57,7 @@ def check_types(parameters, parameter_types):
     :param parameters: List of (name, value) pairs of the given parameters
     :type parameters: dict[str, object]
     :param parameter_types: Parameter type by name.
-    :type parameter_types: dict[str,type]
+    :type parameter_types: dict[str, type]
     """
     for name, parameter_type in parameter_types.items():
         if name not in parameters:
@@ -88,7 +88,7 @@ def check_return_type(value, expected_type):
     """Checks that the given return value has the correct type.
 
     :param value: Value returned by the method
-    :type value: any
+    :type value: object
     :param expected_type: Expected return type
     :type expected_type: type
     """
