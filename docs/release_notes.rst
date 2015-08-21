@@ -13,21 +13,26 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-Welcome to typedjsonrpc's documentation!
-========================================
+=============
+Release Notes
+=============
 
-Contents:
+0.2.0
+-----
+This is a small update from the last release based on usage.
 
-.. toctree::
-   :maxdepth: 3
+Features
+^^^^^^^^
+* Added ability to access the current request in method call
 
-   readme
-   api
-   release_notes
+Bugfixes
+^^^^^^^^
+* Exceptions which are not JSON-serializable are now converted to strings using ``repr`` rather than
+  failing serialization
 
-Indices and tables
-==================
+Backwards compatibility breaks
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-* :ref:`genindex`
-* :ref:`modindex`
-
+0.1.0
+-----
+Initial Release
