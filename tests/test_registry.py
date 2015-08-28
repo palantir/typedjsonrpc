@@ -17,8 +17,8 @@ import json
 import pytest
 import six
 
-from typedjsonrpc.errors import (InvalidParamsError, InvalidReturnTypeError, InvalidRequestError,
-                                 MethodNotFoundError, ParseError)
+from typedjsonrpc.errors import (InternalError, InvalidParamsError, InvalidReturnTypeError,
+                                 InvalidRequestError, MethodNotFoundError, ParseError)
 from typedjsonrpc.registry import Registry
 
 
@@ -644,6 +644,58 @@ class TestDispatch(object):
         assert isinstance(response, dict)
         assert "error" in response
         assert random_val == response["error"]["data"]["random"]
+
+    def test_encoder_exception_batch(self):
+        def custom_encode(input):
+            if "foo" in str(input):
+                raise InternalError("Could not parse the input data.")
+            else:
+                return json.JSONEncoder().encode(input)
+
+        registry = Registry()
+        registry.json_encoder.encode = custom_encode
+
+        fake_batch_request = self._create_fake_request([{
+            "jsonrpc": "2.0",
+            "method": "rpc.describe",
+            "params": [],
+            "id": "foo",
+        }, {
+            "jsonrpc": "2.0",
+            "method": "rpc.describe",
+            "params": [],
+            "id": "bar",
+        }])
+        response = json.loads(registry.dispatch(fake_batch_request))
+
+        assert isinstance(response, list)
+        assert len(response) == 2
+
+        foo_response = response[0] if response[1]["id"] == "bar" else response[1]
+        TestDispatch.assert_error(foo_response, "foo", InternalError)
+        assert foo_response["error"]["data"] == "Could not parse the input data."
+
+        bar_response = response[1] if response[1]["id"] == "bar" else response[0]
+        assert "error" not in bar_response
+
+    def test_encoder_exception_single(self):
+        def throw_error(input):
+            raise InternalError("Could not parse the input data.")
+
+        registry = Registry()
+        registry.json_encoder.encode = throw_error
+
+        fake_request = self._create_fake_request({
+            "jsonrpc": "2.0",
+            "method": "rpc.describe",
+            "params": [],
+            "id": "foo",
+        })
+        response = json.loads(registry.dispatch(fake_request))
+
+        assert isinstance(response, dict)
+        TestDispatch.assert_error(response, "foo", InternalError)
+        assert response["error"]["data"] == "Could not parse the input data."
 
 
 def test_describe():

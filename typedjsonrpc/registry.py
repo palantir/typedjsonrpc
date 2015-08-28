@@ -95,7 +95,7 @@ class Registry(object):
 
         result = self._handle_exceptions(_wrapped)
         if result is not None:
-            return self.json_encoder.encode(result)
+            return self._encode_complete_result(result)
 
     def _dispatch_and_handle_errors(self, msg):
         is_notification = isinstance(msg, dict) and "id" not in msg
@@ -107,9 +107,12 @@ class Registry(object):
 
         return self._handle_exceptions(_wrapped, is_notification, self._get_id_if_known(msg))
 
-    def _handle_exceptions(self, method, is_notification=False, msg_id=None):
+    def _handle_exceptions(self, method, is_notification=False, msg_id=None, params=None):
         try:
-            return method()
+            if params is None:
+                return method()
+            else:
+                return method(params)
         except Error as exc:
             if not is_notification:
                 if self.debug:
@@ -125,6 +128,25 @@ class Registry(object):
                     debug_url = None
                 new_error = InternalError.from_error(exc_info, self.json_encoder, debug_url)
                 return Registry._create_error_response(msg_id, new_error)
+
+    def _encode_complete_result(self, result):
+        if isinstance(result, list):
+            return '[' + ','.join([self._encode_single_result(res) for res in result]) + ']'
+        else:
+            return self._encode_single_result(result)
+
+    def _encode_single_result(self, result):
+        msg_id = Registry._get_id_if_known(result)
+        is_notification = msg_id is None
+        encoded = self._handle_exceptions(method=self.json_encoder.encode,
+                                          is_notification=is_notification,
+                                          msg_id=msg_id,
+                                          params=result)
+        if isinstance(encoded, dict):
+            # Fall back to default because previous encoding didn't work.
+            return json.JSONEncoder().encode(encoded)
+        else:
+            return encoded
 
     def _store_traceback(self):
         traceback = get_current_traceback(skip=1,
