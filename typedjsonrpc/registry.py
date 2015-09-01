@@ -138,7 +138,7 @@ class Registry(object):
     def _encode_single_result(self, result):
         msg_id = Registry._get_id_if_known(result)
         is_notification = msg_id is None
-        encoded = self._handle_exceptions(method=self.json_encoder.encode,
+        encoded = self._handle_exceptions(self.json_encoder.encode,
                                           is_notification=is_notification,
                                           msg_id=msg_id,
                                           params=result)
