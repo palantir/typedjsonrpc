@@ -651,7 +651,7 @@ class TestDispatch(object):
         original_encode = registry.json_encoder.encode
 
         def custom_encode(input):
-            if "foo" in str(input):
+            if "result" in input and input["id"] == "foo":
                 raise InternalError("Could not parse the input data.")
             else:
                 return original_encode(input)
@@ -686,10 +686,15 @@ class TestDispatch(object):
         assert "error" not in bar_response
 
     def test_encoder_exception_single(self):
-        def throw_error(input):
-            raise InternalError("Could not parse the input data.")
-
         registry = Registry()
+        original_encode = registry.json_encoder.encode
+
+        def fake_encode(input):
+            if "result" in input:
+                raise InternalError("Could not parse the input data.")
+            else:
+                return original_encode(input)
+
         fake_request = self._create_fake_request({
             "jsonrpc": "2.0",
             "method": "rpc.describe",
@@ -697,7 +702,7 @@ class TestDispatch(object):
             "id": "foo",
         })
 
-        with mock.patch('typedjsonrpc.registry.Registry.json_encoder.encode', throw_error):
+        with mock.patch('typedjsonrpc.registry.Registry.json_encoder.encode', fake_encode):
             response = json.loads(registry.dispatch(fake_request))
 
         assert isinstance(response, dict)

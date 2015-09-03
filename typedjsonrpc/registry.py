@@ -145,7 +145,7 @@ class Registry(object):
                                                     msg_id=msg_id)
         if is_error:
             # Fall back to default because previous encoding didn't work.
-            return json.JSONEncoder().encode(encoded)
+            return self.json_encoder.encode(encoded)
         else:
             return encoded
 
