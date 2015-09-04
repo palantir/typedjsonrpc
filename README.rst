@@ -231,7 +231,7 @@ Additional features
 Customizing type serialization
 ------------------------------
 If you would like to serialize custom types, you can set the ``json_encoder`` and ``json_decoder``
-attributes on ``Server`` to your own custom :class:`json.JSONEncoder` and :class:`json.JSONDecoder`
+attributes on ``Server`` to your own custom `json.JSONEncoder` and `json.JSONDecoder`
 instance. By default, we use the default encoder and decoder.
 
 Adding hooks before the first request
@@ -259,8 +259,8 @@ debugging information before your first request:
 Accessing the HTTP request from JSON-RPC methods
 ------------------------------------------------
 In some situations, you may want to access the HTTP request from your JSON-RPC method. For example,
-you could need to perform logic based on headers in the request. In the :mod:`typedjsonrpc.server`
-module, there is a special :attr:`typedjsonrpc.server.current_request` attribute which allows you to
+you could need to perform logic based on headers in the request. In the `typedjsonrpc.server`
+module, there is a special `typedjsonrpc.server.current_request` attribute which allows you to
 access the HTTP request which was used to call the current method.
 
 .. warning::
