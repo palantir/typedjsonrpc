@@ -93,9 +93,9 @@ class Registry(object):
             else:
                 return non_notification_results
 
-        result = self._handle_exceptions(_wrapped)
+        result, _ = self._handle_exceptions(_wrapped)
         if result is not None:
-            return self.json_encoder.encode(result)
+            return self._encode_complete_result(result)
 
     def _dispatch_and_handle_errors(self, msg):
         is_notification = isinstance(msg, dict) and "id" not in msg
@@ -105,17 +105,18 @@ class Registry(object):
             if not is_notification:
                 return Registry._create_result_response(msg["id"], result)
 
-        return self._handle_exceptions(_wrapped, is_notification, self._get_id_if_known(msg))
+        result, _ = self._handle_exceptions(_wrapped, is_notification, self._get_id_if_known(msg))
+        return result
 
     def _handle_exceptions(self, method, is_notification=False, msg_id=None):
         try:
-            return method()
+            return method(), False
         except Error as exc:
             if not is_notification:
                 if self.debug:
                     debug_url = self._store_traceback()
                     exc.data = {"message": exc.data, "debug_url": debug_url}
-                return Registry._create_error_response(msg_id, exc)
+                return Registry._create_error_response(msg_id, exc), True
         except Exception as exc:  # pylint: disable=broad-except
             if not is_notification:
                 exc_info = sys.exc_info()
@@ -124,7 +125,29 @@ class Registry(object):
                 else:
                     debug_url = None
                 new_error = InternalError.from_error(exc_info, self.json_encoder, debug_url)
-                return Registry._create_error_response(msg_id, new_error)
+                return Registry._create_error_response(msg_id, new_error), True
+
+    def _encode_complete_result(self, result):
+        if isinstance(result, list):
+            return '[' + ','.join([self._encode_single_result(res) for res in result]) + ']'
+        else:
+            return self._encode_single_result(result)
+
+    def _encode_single_result(self, result):
+        msg_id = Registry._get_id_if_known(result)
+        is_notification = msg_id is None
+
+        def _encode():
+            return self.json_encoder.encode(result)
+
+        encoded, is_error = self._handle_exceptions(_encode,
+                                                    is_notification=is_notification,
+                                                    msg_id=msg_id)
+        if is_error:
+            # Fall back to default because previous encoding didn't work.
+            return self.json_encoder.encode(encoded)
+        else:
+            return encoded
 
     def _store_traceback(self):
         traceback = get_current_traceback(skip=1,
