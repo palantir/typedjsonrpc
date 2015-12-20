@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# coding: utf-8
 #
 # Copyright 2015 Palantir Technologies, Inc.
 #
@@ -13,21 +14,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""A setuptools based setup module.
-
-See:
-https://packaging.python.org/en/latest/distributing.html
-https://github.com/pypa/sampleproject
-"""
+from __future__ import absolute_import, division, print_function
 
 import versioneer
 
-# Always prefer setuptools over distutils
-from setuptools import setup, find_packages
-# To use a consistent encoding
 from codecs import open
 from os import path
+from setuptools import find_packages, setup
 
 here = path.abspath(path.dirname(__file__))
 
@@ -47,6 +40,9 @@ setup(
 
     author="Michael Nazario",
     author_email="mnazario@palantir.com",
+
+    maintainer="Michael Nazario",
+    maintainer_email="mnazario@palantir.com",
 
     license="Apache License 2.0",
 
@@ -68,11 +64,11 @@ setup(
 
     keywords="jsonrpc json-rpc rpc",
 
-    packages=find_packages(exclude=["contrib", "docs", "tests*"]),
+    packages=find_packages(where=here, exclude=["contrib", "docs", "tests*"]),
 
     install_requires=[
-        "six",
-        "werkzeug",
-        "wrapt"
+        "six>=1.0.0,<2.0.0",
+        "werkzeug>=0.10.0,<0.11.0",
+        "wrapt>=1.10.0,<2.0.0",
     ],
 )
