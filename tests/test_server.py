@@ -1,3 +1,4 @@
+# coding: utf-8
 #
 # Copyright 2015 Palantir Technologies, Inc.
 #
@@ -13,12 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typedjsonrpc.registry import Registry
-from typedjsonrpc.server import current_request, DebuggedJsonRpcApplication, Server, Response
-from werkzeug.exceptions import HTTPException
+from __future__ import absolute_import, division, print_function
+
 import pytest
 import six
 import werkzeug.debug
+from typedjsonrpc.registry import Registry
+from typedjsonrpc.server import DebuggedJsonRpcApplication, Response, Server, current_request
+from werkzeug.exceptions import HTTPException
 
 if six.PY3:
     import unittest.mock as mock

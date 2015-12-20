@@ -1,3 +1,4 @@
+# coding: utf-8
 #
 # Copyright 2015 Palantir Technologies, Inc.
 #
@@ -12,8 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 from . import registry
 
@@ -57,7 +57,7 @@ def mean(data):
     :return: The mean of the list
     :rtype: float
     """
-    total = float(sum(data))
+    total = sum(data)
     return total / len(data)
 
 

@@ -1,3 +1,4 @@
+# coding: utf-8
 #
 # Copyright 2015 Palantir Technologies, Inc.
 #
@@ -36,13 +37,13 @@ If you choose to call ``__main__.raise_error`` through JSON-RPC, you'll discover
 gives you a ``debug_url`` field in the error message. This is a link to the Werkzeug debugger at
 ``http://<host>:<port>/<debug_url>``.
 """
+from __future__ import absolute_import, division, print_function
+
 import six
 from typedjsonrpc.registry import Registry
 from typedjsonrpc.server import Server
 
-
-# For Python 2 and 3 compatibility
-STRING_TYPE = six.string_types[0]
+STRING_TYPE = six.string_types[0] # For Python 2 and 3 compatibility
 
 registry = Registry()
 server = Server(registry)

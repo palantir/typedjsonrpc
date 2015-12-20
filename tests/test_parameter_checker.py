@@ -1,3 +1,4 @@
+# coding: utf-8
 #
 # Copyright 2015 Palantir Technologies, Inc.
 #
@@ -13,9 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import absolute_import, division, print_function
+
 import pytest
 import typedjsonrpc.parameter_checker as parameter_checker
-
 from typedjsonrpc.errors import InvalidParamsError
 
 

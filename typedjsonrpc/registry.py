@@ -1,3 +1,4 @@
+# coding: utf-8
 #
 # Copyright 2015 Palantir Technologies, Inc.
 #
@@ -14,17 +15,19 @@
 # limitations under the License.
 
 """Logic for storing and calling jsonrpc methods."""
+from __future__ import absolute_import, division, print_function
+
 import inspect
 import json
-import six
 import sys
-import typedjsonrpc.parameter_checker as parameter_checker
-import wrapt
 
-from typedjsonrpc.errors import (Error, InternalError, InvalidRequestError, MethodNotFoundError,
-                                 ParseError)
-from typedjsonrpc.method_info import MethodInfo, MethodSignature
+import six
+import wrapt
 from werkzeug.debug.tbtools import get_current_traceback
+
+import .parameter_checker as parameter_checker
+from .errors import Error, InternalError, InvalidRequestError, MethodNotFoundError, ParseError
+from .method_info import MethodInfo, MethodSignature
 
 __all__ = ["Registry"]
 

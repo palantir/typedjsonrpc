@@ -1,3 +1,4 @@
+# coding: utf-8
 #
 # Copyright 2015 Palantir Technologies, Inc.
 #
@@ -14,10 +15,13 @@
 # limitations under the License.
 
 """Logic for checking parameter declarations and parameter types."""
+from __future__ import absolute_import, division, print_function
+
 import inspect
+
 import six
 
-from typedjsonrpc.errors import InvalidParamsError, InvalidReturnTypeError
+from .errors import InvalidParamsError, InvalidReturnTypeError
 
 
 def validate_params_match(method, parameters):
