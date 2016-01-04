@@ -21,6 +21,7 @@ import json
 import mock
 import pytest
 import six
+
 from typedjsonrpc.errors import (InternalError, InvalidParamsError, InvalidRequestError,
                                  InvalidReturnTypeError, MethodNotFoundError, ParseError)
 from typedjsonrpc.registry import Registry

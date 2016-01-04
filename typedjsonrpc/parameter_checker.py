@@ -32,7 +32,7 @@ def validate_params_match(method, parameters):
     :param parameters: The parameters to use in the call
     :type parameters: dict[str, object] | list[object]
     """
-    argspec = inspect.getargspec(method)
+    argspec = inspect.getargspec(method)  # pylint: disable=deprecated-method
     default_length = len(argspec.defaults) if argspec.defaults is not None else 0
 
     if isinstance(parameters, list):

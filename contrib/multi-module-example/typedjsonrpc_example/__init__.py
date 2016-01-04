@@ -23,6 +23,5 @@ server = Server(registry)
 
 
 # Load modules after server creation due to a circular reference
-import typedjsonrpc_example.invalid
-import typedjsonrpc_example.valid
-
+import typedjsonrpc_example.invalid  # flake8: NOQA
+import typedjsonrpc_example.valid  # flake8: NOQA
