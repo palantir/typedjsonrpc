@@ -31,8 +31,8 @@ typedjsonrpc
 .. image:: https://badge.fury.io/py/typedjsonrpc.svg
      :target: http://badge.fury.io/py/typedjsonrpc
 
-.. image:: https://travis-ci.org/palantir/typedjsonrpc.svg
-     :target: https://travis-ci.org/palantir/typedjsonrpc
+.. image:: https://circleci.com/gh/palantir/typedjsonrpc.svg?style=shield
+     :target: https://circleci.com/gh/palantir/typedjsonrpc
 
 typedjsonrpc is a decorator-based `JSON-RPC <http://www.jsonrpc.org/specification>`_ library for
 Python that exposes parameter and return types. It is influenced by
