@@ -1,3 +1,4 @@
+# coding: utf-8
 #
 # Copyright 2015 Palantir Technologies, Inc.
 #
@@ -13,13 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import absolute_import, division, print_function
+
 import json
+
 import mock
 import pytest
 import six
 
-from typedjsonrpc.errors import (InternalError, InvalidParamsError, InvalidReturnTypeError,
-                                 InvalidRequestError, MethodNotFoundError, ParseError)
+from typedjsonrpc.errors import (InternalError, InvalidParamsError, InvalidRequestError,
+                                 InvalidReturnTypeError, MethodNotFoundError, ParseError)
 from typedjsonrpc.registry import Registry
 
 

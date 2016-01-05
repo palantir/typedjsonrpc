@@ -1,3 +1,4 @@
+# coding: utf-8
 #
 # Copyright 2015 Palantir Technologies, Inc.
 #
@@ -14,15 +15,15 @@
 # limitations under the License.
 
 """Contains the Werkzeug server for debugging and WSGI compatibility."""
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, division, print_function
 
 from threading import Lock
 
 from werkzeug.debug import DebuggedApplication
 from werkzeug.exceptions import abort
 from werkzeug.local import Local, LocalManager, LocalProxy
-from werkzeug.serving import run_simple
 from werkzeug.routing import Map, Rule
+from werkzeug.serving import run_simple
 from werkzeug.wrappers import Request, Response
 
 __all__ = ["Server", "DebuggedJsonRpcApplication", "current_request"]

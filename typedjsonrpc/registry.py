@@ -1,3 +1,4 @@
+# coding: utf-8
 #
 # Copyright 2015 Palantir Technologies, Inc.
 #
@@ -14,17 +15,19 @@
 # limitations under the License.
 
 """Logic for storing and calling jsonrpc methods."""
+from __future__ import absolute_import, division, print_function
+
 import inspect
 import json
-import six
 import sys
-import typedjsonrpc.parameter_checker as parameter_checker
-import wrapt
 
-from typedjsonrpc.errors import (Error, InternalError, InvalidRequestError, MethodNotFoundError,
-                                 ParseError)
-from typedjsonrpc.method_info import MethodInfo, MethodSignature
+import six
+import wrapt
 from werkzeug.debug.tbtools import get_current_traceback
+
+import typedjsonrpc.parameter_checker as parameter_checker
+from .errors import Error, InternalError, InvalidRequestError, MethodNotFoundError, ParseError
+from .method_info import MethodInfo, MethodSignature
 
 __all__ = ["Registry"]
 
@@ -238,8 +241,8 @@ class Registry(object):
             if instance is not None:
                 raise Exception("Instance shouldn't be set.")
 
-            parameter_names = inspect.getargspec(method).args
-            defaults = inspect.getargspec(method).defaults
+            parameter_names = inspect.getargspec(method).args  # pylint: disable=deprecated-method
+            defaults = inspect.getargspec(method).defaults  # pylint: disable=deprecated-method
             parameters = self._collect_parameters(parameter_names, args, kwargs, defaults)
 
             parameter_checker.check_types(parameters, parameter_types)
@@ -257,7 +260,7 @@ class Registry(object):
             :return: The original method wrapped into a type-checker
             :rtype: function
             """
-            parameter_names = inspect.getargspec(method).args
+            parameter_names = inspect.getargspec(method).args  # pylint: disable=deprecated-method
             parameter_checker.check_type_declaration(parameter_names, parameter_types)
 
             wrapped_method = type_check_wrapper(method, None, None, None)

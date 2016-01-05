@@ -1,3 +1,4 @@
+# coding: utf-8
 #
 # Copyright 2015 Palantir Technologies, Inc.
 #
@@ -39,9 +40,15 @@ If you choose to call ``typedjsonrpc_example.invalid.raise_error`` through JSON-
 that typedjsonrpc gives you a ``debug_url`` field in the error message. This is a link to the
 Werkzeug debugger at ``http://<host>:<port>/<debug_url>``.
 """
+from __future__ import absolute_import, division, print_function
+
 from typedjsonrpc_example import server
 
 
-# Modules must be registered before running the server
-if __name__ == "__main__":
+def main():
+    # Modules must be registered before running the server
     server.run("0.0.0.0", 3031)
+
+
+if __name__ == "__main__":
+    main()

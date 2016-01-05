@@ -1,3 +1,4 @@
+# coding: utf-8
 #
 # Copyright 2015 Palantir Technologies, Inc.
 #
@@ -14,6 +15,8 @@
 # limitations under the License.
 
 """Error classes for typedjsonrpc."""
+from __future__ import absolute_import, division, print_function
+
 import traceback
 
 

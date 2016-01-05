@@ -1,3 +1,4 @@
+# coding: utf-8
 #
 # Copyright 2015 Palantir Technologies, Inc.
 #
@@ -13,12 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typedjsonrpc.registry import Registry
-from typedjsonrpc.server import current_request, DebuggedJsonRpcApplication, Server, Response
-from werkzeug.exceptions import HTTPException
+from __future__ import absolute_import, division, print_function
+
 import pytest
 import six
 import werkzeug.debug
+from werkzeug.exceptions import HTTPException
+
+from typedjsonrpc.registry import Registry
+from typedjsonrpc.server import DebuggedJsonRpcApplication, Response, Server, current_request
 
 if six.PY3:
     import unittest.mock as mock
@@ -48,11 +52,11 @@ class TestDebuggedJsonRpcApplication(object):
         registry.tracebacks[1234] = mock_traceback
         start_response = mock.Mock()
         environ = {
-             "SERVER_NAME": "localhost",
-             "SERVER_PORT": "5060",
-             "PATH_INFO": "/api",
-             "REQUEST_METHOD": "POST",
-             "wsgi.url_scheme": "http",
+            "SERVER_NAME": "localhost",
+            "SERVER_PORT": "5060",
+            "PATH_INFO": "/api",
+            "REQUEST_METHOD": "POST",
+            "wsgi.url_scheme": "http",
         }
         debugged_app.handle_debug(environ, start_response, 1234)
 

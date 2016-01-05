@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import absolute_import, division, print_function
 
 from typedjsonrpc.registry import Registry
 from typedjsonrpc.server import Server
@@ -22,6 +23,5 @@ server = Server(registry)
 
 
 # Load modules after server creation due to a circular reference
-import typedjsonrpc_example.invalid
-import typedjsonrpc_example.valid
-
+import typedjsonrpc_example.invalid  # flake8: NOQA
+import typedjsonrpc_example.valid  # flake8: NOQA
