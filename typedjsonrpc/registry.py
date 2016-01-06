@@ -19,6 +19,7 @@ from __future__ import absolute_import, division, print_function
 
 import inspect
 import json
+import logging
 import sys
 
 import six
@@ -30,6 +31,14 @@ from .errors import Error, InternalError, InvalidRequestError, MethodNotFoundErr
 from .method_info import MethodInfo, MethodSignature
 
 __all__ = ["Registry"]
+
+
+def _get_default_logger():
+    logger = logging.getLogger(__name__)
+    if logger.getEffectiveLevel() == logging.NOTSET:
+        logger.setLevel(logging.INFO)
+    logger.handlers = [logging.StreamHandler(sys.stdout)]
+    return logger
 
 
 class Registry(object):
@@ -65,6 +74,7 @@ class Registry(object):
         self._name_to_method_info = {}
         self._register_describe()
         self.debug = debug
+        self._logger = _get_default_logger()
         self.tracebacks = {}
 
     def _register_describe(self):
@@ -127,6 +137,8 @@ class Registry(object):
                     debug_url = self._store_traceback()
                 else:
                     debug_url = None
+                exception_message = "id: {}, debug_url: {}".format(msg_id, debug_url)
+                self._logger.exception(exception_message)
                 new_error = InternalError.from_error(exc_info, self.json_encoder, debug_url)
                 return Registry._create_error_response(msg_id, new_error), True
 

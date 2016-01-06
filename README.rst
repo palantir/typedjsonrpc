@@ -225,6 +225,18 @@ response will contain an error object with a ``debug_url``:
 
 This tells you to find the traceback interpreter at ``<host>:<port>/debug/1234567890``.
 
+Logging
+-------
+
+The registry has a default logger in the module ``typedjsonrpc.registry`` and it logs all errors
+that are not defined by ``typedjsonrpc``. You can configure the logger as follows:
+
+.. code-block:: python
+
+    import logging
+    logger = logging.getLogger("typedjsonrpc.registry")
+    # Do configuration to this logger
+
 Additional features
 ===================
 
