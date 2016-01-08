@@ -290,3 +290,46 @@ Example:
     @registry.method(returns=list)
     def get_headers():
         return list(current_request.headers)
+
+Disabling strictness of floats
+------------------------------
+``typedjsonrpc`` by default will only accept floats into a `float` typed parameter. For example, if
+your function were this:
+
+.. code-block:: python
+
+    import math
+
+    @registry.method(returns=int, x=float)
+    def floor(x):
+        return int(math.floor(x))
+
+and your input were this::
+
+    {
+        "jsonrpc": "2.0",
+        "method": "floor",
+        "params": {
+            "x": 1
+        },
+        "id": "foo"
+    }
+
+You would get an invalid param error like this::
+
+    {
+        "error": {
+            "code": -32602,
+            "data": {
+                "debug_url": "/debug/4456954960",
+                "message": "Value '1' for parameter 'x' is not of expected type <type 'float'>."
+            },
+            "message": "Invalid params"
+        },
+        "id": "foo",
+        "jsonrpc": "2.0"
+    }
+
+This can actually frequently come up when you use a JSON encoder. A JSON encoder may choose to write
+the float ``1.0`` as an integer ``1``. In order to get around this, you can manually edit the JSON
+or set ``strict_floats`` to ``False`` in your `typedjsonrpc.registry.Registry`.
