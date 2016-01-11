@@ -54,6 +54,7 @@ class Server(object):
     :type registry: typedjsonrpc.registry.Registry
 
     .. versionadded:: 0.1.0
+    .. versionchanged:: 0.4.0 Now returns HTTP status codes
     """
 
     def __init__(self, registry, endpoint=DEFAULT_API_ENDPOINT_NAME):
