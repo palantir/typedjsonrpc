@@ -56,7 +56,7 @@ copyright = u"2015, Palantir Technologies, Inc"
 # the built documents.
 #
 # The short X.Y version.
-version = typedjsonrpc.__version__.split(maxsplit=3)[:2]
+version = ".".join(typedjsonrpc.__version__.split(".", 3)[:2])
 # The full version, including alpha/beta/rc tags.
 release = typedjsonrpc.__version__
 
