@@ -28,6 +28,7 @@ class Error(Exception):
     code = 0
     message = None
     data = None
+    status_code = 500
 
     def __init__(self, data=None):
         super(Error, self).__init__(self.code, self.message, data)
@@ -52,6 +53,7 @@ class ParseError(Error):
     """
     code = -32700
     message = "Parse error"
+    status_code = 400
 
 
 class InvalidRequestError(Error):
@@ -61,6 +63,7 @@ class InvalidRequestError(Error):
     """
     code = -32600
     message = "Invalid request"
+    status_code = 400
 
 
 class MethodNotFoundError(Error):
@@ -70,6 +73,7 @@ class MethodNotFoundError(Error):
     """
     code = -32601
     message = "Method not found"
+    status_code = 404
 
 
 class InvalidParamsError(Error):
@@ -79,6 +83,7 @@ class InvalidParamsError(Error):
     """
     code = -32602
     message = "Invalid params"
+    status_code = 500
 
 
 class InternalError(Error):
@@ -88,6 +93,7 @@ class InternalError(Error):
     """
     code = -32603
     message = "Internal error"
+    status_code = 500
 
     @staticmethod
     def from_error(exc_info, json_encoder, debug_url=None):
@@ -123,6 +129,7 @@ class ServerError(Error):
     """
     code = -32000
     message = "Server error"
+    status_code = 500
 
 
 class InvalidReturnTypeError(Error):
@@ -132,3 +139,18 @@ class InvalidReturnTypeError(Error):
     """
     code = -32001
     message = "Invalid return type"
+    status_code = 500
+
+
+_error_code_map = {  # pylint: disable=invalid-name
+    type_.code: type_
+    for type_ in [Error] + Error.__subclasses__()  # pylint: disable=no-member
+}
+
+
+def get_status_code_from_error_code(error_code):
+    """Returns the status code for the matching error code.
+
+    .. versionadded:: 0.4.0
+    """
+    return _error_code_map[error_code].status_code
