@@ -66,14 +66,21 @@ class Registry(object):
     .. versionchanged:: 0.2.0 Changed from class to instance
     """
 
-    def __init__(self, debug=False):
+    def __init__(self,
+                 debug=False,
+                 strict_floats=True):
         """
         :param debug: If True, the registry records tracebacks for debugging purposes
         :type debug: bool
+        :param strict_floats: If True, the registry does not autocast floats into ints
+        :type strict_floats: bool
+
+        .. versionchanged:: 0.4.0 Added strict_floats option
         """
         self._name_to_method_info = {}
         self._register_describe()
         self.debug = debug
+        self._strict_floats = strict_floats
         self._logger = _get_default_logger()
         self.tracebacks = {}
 
@@ -257,10 +264,10 @@ class Registry(object):
             defaults = inspect.getargspec(method).defaults  # pylint: disable=deprecated-method
             parameters = self._collect_parameters(parameter_names, args, kwargs, defaults)
 
-            parameter_checker.check_types(parameters, parameter_types)
+            parameter_checker.check_types(parameters, parameter_types, self._strict_floats)
 
             result = method(*args, **kwargs)
-            parameter_checker.check_return_type(result, returns)
+            parameter_checker.check_return_type(result, returns, self._strict_floats)
 
             return result
 
