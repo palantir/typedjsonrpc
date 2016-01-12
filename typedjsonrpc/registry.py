@@ -107,7 +107,7 @@ class Registry(object):
             results = [self._dispatch_and_handle_errors(message) for message in messages]
             non_notification_results = [x for x in results if x is not None]
             if len(non_notification_results) == 0:
-                return
+                return None
             elif len(messages) == 1:
                 return non_notification_results[0]
             else:

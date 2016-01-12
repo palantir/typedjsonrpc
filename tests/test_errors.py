@@ -19,7 +19,7 @@ from __future__ import absolute_import, division, print_function
 import json
 import sys
 
-from typedjsonrpc.errors import InternalError
+from typedjsonrpc.errors import Error, InternalError, get_status_code_from_error_code
 
 
 class TestInternalError(object):
@@ -43,3 +43,9 @@ class TestInternalError(object):
         except Exception:
             wrapped_exc = InternalError.from_error(sys.exc_info(), json.JSONEncoder)
             json.dumps(wrapped_exc.as_error_object())
+
+
+def test_get_status_code_from_error_code():
+    for type_ in [Error] + Error.__subclasses__():
+        status_code = get_status_code_from_error_code(type_.code)
+        assert type_.status_code == status_code

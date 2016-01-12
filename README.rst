@@ -237,13 +237,43 @@ that are not defined by ``typedjsonrpc``. You can configure the logger as follow
     logger = logging.getLogger("typedjsonrpc.registry")
     # Do configuration to this logger
 
+HTTP status codes
+-----------------
+Since typedjsonrpc 0.4.0, HTTP status codes were added to the responses from the
+``typedjsonrpc.server.Server`` class. This is to improve the usage of typedjsonrpc over HTTP. The
+following chart are the satus codes which are returned:
+
++-----------------------------------+---------+-------------+
+|Condition                          | Batched | Status code |
++===================================+=========+=============+
+| Success                           | Y       | 200         |
++                                   +---------+-------------+
+|                                   | N       | 200         |
++-----------------------------------+---------+-------------+
+| All notifications                 | Y       | 204         |
++                                   +---------+-------------+
+|                                   | N       | 204         |
++-----------------------------------+---------+-------------+
+| ParseError or InvalidRequestError | Y       | 200         |
++                                   +---------+-------------+
+|                                   | N       | 400         |
++-----------------------------------+---------+-------------+
+| MethodNotFoundError               | Y       | 200         |
++                                   +---------+-------------+
+|                                   | N       | 404         |
++-----------------------------------+---------+-------------+
+| All other errors                  | Y       | 200         |
++                                   +---------+-------------+
+|                                   | N       | 500         |
++-----------------------------------+---------+-------------+
+
 Additional features
 ===================
 
 Customizing type serialization
 ------------------------------
 If you would like to serialize custom types, you can set the ``json_encoder`` and ``json_decoder``
-attributes on ``Server`` to your own custom `json.JSONEncoder` and `json.JSONDecoder`
+attributes on ``Server`` to your own custom ``json.JSONEncoder`` and ``json.JSONDecoder``
 instance. By default, we use the default encoder and decoder.
 
 Adding hooks before the first request
