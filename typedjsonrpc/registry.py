@@ -72,7 +72,7 @@ class Registry(object):
         """
         :param debug: If True, the registry records tracebacks for debugging purposes
         :type debug: bool
-        :param strict_floats: If True, the registry does not autocast floats into ints
+        :param strict_floats: If True, the registry does not allow ints as float parameters
         :type strict_floats: bool
 
         .. versionchanged:: 0.4.0 Added strict_floats option
