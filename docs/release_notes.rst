@@ -16,6 +16,17 @@
 =============
 Release Notes
 =============
+0.4.0
+-----
+This update includes a few new features around debugging.
+
+Features
+^^^^^^^^
+* Added automatic logging of user-created errors thrown during runtime
+* Added HTTP status codes to :class:`typedjsonrpc.server.Server` based on JSON-RPC protocol-based
+  errors
+* Added flag to :class:`typedjsonrpc.registry.Registry` for the type system to allow integers when
+  a field accepts floats
 
 0.3.0
 -----
