@@ -1,3 +1,4 @@
+# coding: utf-8
 #
 # Copyright 2015 Palantir Technologies, Inc.
 #
@@ -13,9 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
-import typedjsonrpc.parameter_checker as parameter_checker
+from __future__ import absolute_import, division, print_function
 
+import pytest
+
+import typedjsonrpc.parameter_checker as parameter_checker
 from typedjsonrpc.errors import InvalidParamsError
 
 
@@ -84,3 +87,17 @@ def test_no_defaults():
     parameter_checker.validate_params_match(foo, {"a": "bar"})
     with pytest.raises(InvalidParamsError):
         parameter_checker.validate_params_match(foo, {"a": "bar", "b": "baz"})
+
+
+class TestIsInstance(object):
+    def test_strict_floats(self):
+        assert parameter_checker._is_instance(1.0, float, strict_floats=True)
+        assert not parameter_checker._is_instance(1, float, strict_floats=True)
+        # This is a long in Python 2
+        assert not parameter_checker._is_instance(1000000000000000000000, float, strict_floats=True)
+
+    def test_non_strict_floats(self):
+        assert parameter_checker._is_instance(1.0, float, strict_floats=False)
+        assert parameter_checker._is_instance(1, float, strict_floats=False)
+        # This is a long in Python 2
+        assert parameter_checker._is_instance(1000000000000000000000, float, strict_floats=False)

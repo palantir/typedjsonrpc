@@ -1,3 +1,4 @@
+# coding: utf-8
 #
 # Copyright 2015 Palantir Technologies, Inc.
 #
@@ -14,16 +15,18 @@
 # limitations under the License.
 
 """Contains the Werkzeug server for debugging and WSGI compatibility."""
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, division, print_function
 
 from threading import Lock
 
 from werkzeug.debug import DebuggedApplication
 from werkzeug.exceptions import abort
 from werkzeug.local import Local, LocalManager, LocalProxy
-from werkzeug.serving import run_simple
 from werkzeug.routing import Map, Rule
+from werkzeug.serving import run_simple
 from werkzeug.wrappers import Request, Response
+
+from .errors import get_status_code_from_error_code
 
 __all__ = ["Server", "DebuggedJsonRpcApplication", "current_request"]
 
@@ -51,6 +54,7 @@ class Server(object):
     :type registry: typedjsonrpc.registry.Registry
 
     .. versionadded:: 0.1.0
+    .. versionchanged:: 0.4.0 Now returns HTTP status codes
     """
 
     def __init__(self, registry, endpoint=DEFAULT_API_ENDPOINT_NAME):
@@ -76,13 +80,23 @@ class Server(object):
         if endpoint == self._endpoint:
             return self._dispatch_jsonrpc_request(request)
         else:
-            abort(500)
+            abort(404)
 
     def _dispatch_jsonrpc_request(self, request):
         json_output = self.registry.dispatch(request)
         if json_output is None:
-            return Response()
-        return Response(json_output, mimetype="application/json")
+            return Response(status=204)
+        return Response(json_output,
+                        mimetype="application/json",
+                        status=self._determine_status_code(json_output))
+
+    def _determine_status_code(self, json_output):
+        output = self.registry.json_decoder.decode(json_output)
+        if isinstance(output, list) or "result" in output:
+            return 200
+        else:
+            assert "error" in output, "JSON-RPC is malformed and doesn't contain result or error"
+            return get_status_code_from_error_code(output["error"]["code"])
 
     def wsgi_app(self, environ, start_response):
         """A basic WSGI app"""

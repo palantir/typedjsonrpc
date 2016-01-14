@@ -1,5 +1,6 @@
+#!/bin/bash
 #
-# Copyright 2015 Palantir Technologies, Inc.
+# Copyright 2016 Palantir Technologies, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,16 +13,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from __future__ import absolute_import, division, print_function
 
-from typedjsonrpc.registry import Registry
-from typedjsonrpc.server import Server
-
-
-registry = Registry()
-server = Server(registry)
-
-
-# Load modules after server creation due to a circular reference
-import typedjsonrpc_example.invalid  # flake8: NOQA
-import typedjsonrpc_example.valid  # flake8: NOQA
+ROOT_DIR="$(cd "$(dirname "$0")"/.. && pwd)"
+(
+    cd "$ROOT_DIR/docs/"
+    make clean html
+)

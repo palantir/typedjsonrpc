@@ -1,3 +1,4 @@
+# coding: utf-8
 #
 # Copyright 2015 Palantir Technologies, Inc.
 #
@@ -16,6 +17,8 @@
 """
 typedjsonrpc - A decorator-based JSON-RPC library for Python that exposes parameter and return types
 """
+from __future__ import absolute_import, division, print_function
+
 from ._version import get_versions
 __version__ = get_versions()["version"]
 del get_versions

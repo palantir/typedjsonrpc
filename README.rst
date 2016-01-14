@@ -31,8 +31,8 @@ typedjsonrpc
 .. image:: https://badge.fury.io/py/typedjsonrpc.svg
      :target: http://badge.fury.io/py/typedjsonrpc
 
-.. image:: https://travis-ci.org/palantir/typedjsonrpc.svg
-     :target: https://travis-ci.org/palantir/typedjsonrpc
+.. image:: https://circleci.com/gh/palantir/typedjsonrpc.svg?style=shield
+     :target: https://circleci.com/gh/palantir/typedjsonrpc
 
 typedjsonrpc is a decorator-based `JSON-RPC <http://www.jsonrpc.org/specification>`_ library for
 Python that exposes parameter and return types. It is influenced by
@@ -225,13 +225,55 @@ response will contain an error object with a ``debug_url``:
 
 This tells you to find the traceback interpreter at ``<host>:<port>/debug/1234567890``.
 
+Logging
+-------
+
+The registry has a default logger in the module ``typedjsonrpc.registry`` and it logs all errors
+that are not defined by ``typedjsonrpc``. You can configure the logger as follows:
+
+.. code-block:: python
+
+    import logging
+    logger = logging.getLogger("typedjsonrpc.registry")
+    # Do configuration to this logger
+
+HTTP status codes
+-----------------
+Since typedjsonrpc 0.4.0, HTTP status codes were added to the responses from the
+``typedjsonrpc.server.Server`` class. This is to improve the usage of typedjsonrpc over HTTP. The
+following chart are the satus codes which are returned:
+
++-----------------------------------+---------+-------------+
+|Condition                          | Batched | Status code |
++===================================+=========+=============+
+| Success                           | Y       | 200         |
++                                   +---------+-------------+
+|                                   | N       | 200         |
++-----------------------------------+---------+-------------+
+| All notifications                 | Y       | 204         |
++                                   +---------+-------------+
+|                                   | N       | 204         |
++-----------------------------------+---------+-------------+
+| ParseError or InvalidRequestError | Y       | 200         |
++                                   +---------+-------------+
+|                                   | N       | 400         |
++-----------------------------------+---------+-------------+
+| MethodNotFoundError               | Y       | 200         |
++                                   +---------+-------------+
+|                                   | N       | 404         |
++-----------------------------------+---------+-------------+
+| All other errors                  | Y       | 200         |
++                                   +---------+-------------+
+|                                   | N       | 500         |
++-----------------------------------+---------+-------------+
+
 Additional features
 ===================
 
 Customizing type serialization
 ------------------------------
 If you would like to serialize custom types, you can set the ``json_encoder`` and ``json_decoder``
-attributes on ``Server`` to your own custom `json.JSONEncoder` and `json.JSONDecoder`
+attributes on ``Server`` to your own custom ``json.JSONEncoder`` and ``json.JSONDecoder``
 instance. By default, we use the default encoder and decoder.
 
 Adding hooks before the first request
@@ -278,3 +320,46 @@ Example:
     @registry.method(returns=list)
     def get_headers():
         return list(current_request.headers)
+
+Disabling strictness of floats
+------------------------------
+``typedjsonrpc`` by default will only accept floats into a `float` typed parameter. For example, if
+your function were this:
+
+.. code-block:: python
+
+    import math
+
+    @registry.method(returns=int, x=float)
+    def floor(x):
+        return int(math.floor(x))
+
+and your input were this::
+
+    {
+        "jsonrpc": "2.0",
+        "method": "floor",
+        "params": {
+            "x": 1
+        },
+        "id": "foo"
+    }
+
+You would get an invalid param error like this::
+
+    {
+        "error": {
+            "code": -32602,
+            "data": {
+                "debug_url": "/debug/4456954960",
+                "message": "Value '1' for parameter 'x' is not of expected type <type 'float'>."
+            },
+            "message": "Invalid params"
+        },
+        "id": "foo",
+        "jsonrpc": "2.0"
+    }
+
+This can actually frequently come up when you use a JSON encoder. A JSON encoder may choose to write
+the float ``1.0`` as an integer ``1``. In order to get around this, you can manually edit the JSON
+or set ``strict_floats`` to ``False`` in your `typedjsonrpc.registry.Registry`.

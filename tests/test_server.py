@@ -1,3 +1,4 @@
+# coding: utf-8
 #
 # Copyright 2015 Palantir Technologies, Inc.
 #
@@ -13,12 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typedjsonrpc.registry import Registry
-from typedjsonrpc.server import current_request, DebuggedJsonRpcApplication, Server, Response
-from werkzeug.exceptions import HTTPException
+from __future__ import absolute_import, division, print_function
+
+import json
+
 import pytest
 import six
 import werkzeug.debug
+from webtest import TestApp
+from werkzeug.exceptions import HTTPException
+
+import typedjsonrpc.errors
+from typedjsonrpc.registry import Registry
+from typedjsonrpc.server import DebuggedJsonRpcApplication, Response, Server, current_request
 
 if six.PY3:
     import unittest.mock as mock
@@ -48,11 +56,11 @@ class TestDebuggedJsonRpcApplication(object):
         registry.tracebacks[1234] = mock_traceback
         start_response = mock.Mock()
         environ = {
-             "SERVER_NAME": "localhost",
-             "SERVER_PORT": "5060",
-             "PATH_INFO": "/api",
-             "REQUEST_METHOD": "POST",
-             "wsgi.url_scheme": "http",
+            "SERVER_NAME": "localhost",
+            "SERVER_PORT": "5060",
+            "PATH_INFO": "/api",
+            "REQUEST_METHOD": "POST",
+            "wsgi.url_scheme": "http",
         }
         debugged_app.handle_debug(environ, start_response, 1234)
 
@@ -90,6 +98,18 @@ class TestDebuggedJsonRpcApplication(object):
 
 class TestServer(object):
 
+    @staticmethod
+    def _create_mock_registry():
+        mock_registry = mock.Mock()
+        mock_registry.json_encoder = json.JSONEncoder()
+        mock_registry.json_decoder = json.JSONDecoder()
+        mock_registry.dispatch.return_value = json.dumps({
+            "jsonrpc": "2.0",
+            "id": "foo",
+            "result": "bar"
+        })
+        return mock_registry
+
     def test_wsgi_app_invalid_endpoint(self):
         environ = {
             "SERVER_NAME": "localhost",
@@ -98,7 +118,7 @@ class TestServer(object):
             "REQUEST_METHOD": "POST",
             "wsgi.url_scheme": "http",
         }
-        mock_registry = mock.Mock()
+        mock_registry = self._create_mock_registry()
         server = Server(mock_registry, "/foo")
         with pytest.raises(HTTPException) as excinfo:
             server(environ, None)
@@ -112,8 +132,7 @@ class TestServer(object):
             "REQUEST_METHOD": "POST",
             "wsgi.url_scheme": "http",
         }
-        mock_registry = mock.Mock()
-        mock_registry.dispatch.return_value = "foo"
+        mock_registry = self._create_mock_registry()
         server = Server(mock_registry, "/foo")
         mock_start_response = mock.Mock()
         server(environ, mock_start_response)
@@ -127,8 +146,7 @@ class TestServer(object):
             "REQUEST_METHOD": "POST",
             "wsgi.url_scheme": "http",
         }
-        mock_registry = mock.Mock()
-        mock_registry.dispatch.return_value = "foo"
+        mock_registry = self._create_mock_registry()
 
         mock_start = mock.Mock()
         mock_start.return_value(None)
@@ -140,6 +158,105 @@ class TestServer(object):
         server(environ, mock_start_response)
 
         mock_start.assert_called_once_with()
+
+    def test_http_status_code_empty_response(self):
+        mock_registry = self._create_mock_registry()
+        mock_registry.dispatch.return_value = None
+        server = Server(mock_registry, "/foo")
+        app = TestApp(server)
+        app.post("/foo", status=204)
+
+    def test_http_status_code_success_response(self):
+        mock_registry = self._create_mock_registry()
+        server = Server(mock_registry, "/foo")
+        app = TestApp(server)
+        app.post("/foo", status=200)
+
+    def test_http_status_code_batched_response_half_success(self):
+        mock_registry = self._create_mock_registry()
+        server = Server(mock_registry, "/foo")
+        mock_registry.dispatch.return_value = json.dumps([
+            {
+                "jsonrpc": "2.0",
+                "id": "foo",
+                "result": "bar"
+            }, {
+                "jsonrpc": "2.0",
+                "id": "bar",
+                "error": typedjsonrpc.errors.MethodNotFoundError().as_error_object()
+            }
+        ])
+        app = TestApp(server)
+        app.post("/foo", status=200)
+
+    def test_http_status_code_batched_response_all_failed(self):
+        mock_registry = self._create_mock_registry()
+        server = Server(mock_registry, "/foo")
+        mock_registry.dispatch.return_value = json.dumps([
+            {
+                "jsonrpc": "2.0",
+                "id": "foo",
+                "error": typedjsonrpc.errors.MethodNotFoundError().as_error_object()
+            }, {
+                "jsonrpc": "2.0",
+                "id": "bar",
+                "error": typedjsonrpc.errors.MethodNotFoundError().as_error_object()
+            }
+        ])
+        app = TestApp(server)
+        app.post("/foo", status=200)
+
+    def test_http_status_code_method_not_found(self):
+        mock_registry = self._create_mock_registry()
+        server = Server(mock_registry, "/foo")
+        mock_registry.dispatch.return_value = json.dumps({
+            "jsonrpc": "2.0",
+            "id": "foo",
+            "error": typedjsonrpc.errors.MethodNotFoundError().as_error_object()
+        })
+        app = TestApp(server)
+        app.post("/foo", status=404)
+
+    def test_http_status_code_parse_error(self):
+        mock_registry = self._create_mock_registry()
+        server = Server(mock_registry, "/foo")
+        mock_registry.dispatch.return_value = json.dumps({
+            "jsonrpc": "2.0",
+            "id": "foo",
+            "error": typedjsonrpc.errors.ParseError().as_error_object()
+        })
+        app = TestApp(server)
+        app.post("/foo", status=400)
+
+    def test_http_status_code_invalid_request_error(self):
+        mock_registry = self._create_mock_registry()
+        server = Server(mock_registry, "/foo")
+        mock_registry.dispatch.return_value = json.dumps({
+            "jsonrpc": "2.0",
+            "id": "foo",
+            "error": typedjsonrpc.errors.InvalidRequestError().as_error_object()
+        })
+        app = TestApp(server)
+        app.post("/foo", status=400)
+
+    def test_http_status_code_other_errors(self):
+        other_error_types = [
+            typedjsonrpc.errors.InvalidReturnTypeError,
+            typedjsonrpc.errors.InvalidParamsError,
+            typedjsonrpc.errors.ServerError,
+            typedjsonrpc.errors.InternalError,
+            typedjsonrpc.errors.Error,
+        ]
+        mock_registry = self._create_mock_registry()
+        server = Server(mock_registry, "/foo")
+        for error_type in other_error_types:
+            mock_registry.dispatch.return_value = json.dumps({
+                "jsonrpc": "2.0",
+                "id": "foo",
+                "error": error_type().as_error_object()
+            })
+            app = TestApp(server)
+            app.post("/foo", status=500)
 
 
 class TestCurrentRequest(object):
@@ -167,7 +284,11 @@ class TestCurrentRequest(object):
 
         def fake_dispatch(request):
             assert current_request == request
-            return Response()
+            return json.dumps({
+                "jsonrpc": "2.0",
+                "id": "foo",
+                "result": "bar"
+            })
         registry.dispatch = fake_dispatch
         environ = {
             "SERVER_NAME": "localhost",

@@ -1,3 +1,4 @@
+# coding: utf-8
 #
 # Copyright 2015 Palantir Technologies, Inc.
 #
@@ -14,10 +15,13 @@
 # limitations under the License.
 
 """Logic for checking parameter declarations and parameter types."""
+from __future__ import absolute_import, division, print_function
+
 import inspect
+
 import six
 
-from typedjsonrpc.errors import InvalidParamsError, InvalidReturnTypeError
+from .errors import InvalidParamsError, InvalidReturnTypeError
 
 
 def validate_params_match(method, parameters):
@@ -28,7 +32,7 @@ def validate_params_match(method, parameters):
     :param parameters: The parameters to use in the call
     :type parameters: dict[str, object] | list[object]
     """
-    argspec = inspect.getargspec(method)
+    argspec = inspect.getargspec(method)  # pylint: disable=deprecated-method
     default_length = len(argspec.defaults) if argspec.defaults is not None else 0
 
     if isinstance(parameters, list):
@@ -51,18 +55,20 @@ def validate_params_match(method, parameters):
             raise InvalidParamsError("Too many parameters")
 
 
-def check_types(parameters, parameter_types):
+def check_types(parameters, parameter_types, strict_floats):
     """Checks that the given parameters have the correct types.
 
     :param parameters: List of (name, value) pairs of the given parameters
     :type parameters: dict[str, object]
     :param parameter_types: Parameter type by name.
     :type parameter_types: dict[str, type]
+    :param strict_floats: If False, treat integers as floats
+    :type strict_floats: bool
     """
     for name, parameter_type in parameter_types.items():
         if name not in parameters:
             raise InvalidParamsError("Parameter '{}' is missing.".format(name))
-        if not _is_instance(parameters[name], parameter_type):
+        if not _is_instance(parameters[name], parameter_type, strict_floats):
             raise InvalidParamsError("Value '{}' for parameter '{}' is not of expected type {}."
                                      .format(parameters[name], name, parameter_type))
 
@@ -84,25 +90,29 @@ def check_type_declaration(parameter_names, parameter_types):
             raise Exception("Parameter '{}' does not have a declared type".format(parameter_name))
 
 
-def check_return_type(value, expected_type):
+def check_return_type(value, expected_type, strict_floats):
     """Checks that the given return value has the correct type.
 
     :param value: Value returned by the method
     :type value: object
     :param expected_type: Expected return type
     :type expected_type: type
+    :param strict_floats: If False, treat integers as floats
+    :type strict_floats: bool
     """
     if expected_type is None:
         if value is not None:
             raise InvalidReturnTypeError("Returned value is '{}' but None was expected"
                                          .format(value))
-    elif not _is_instance(value, expected_type):
+    elif not _is_instance(value, expected_type, strict_floats):
         raise InvalidReturnTypeError("Type of return value '{}' does not match expected type {}"
                                      .format(value, expected_type))
 
 
-def _is_instance(value, expected_type):
-    if expected_type is int:
+def _is_instance(value, expected_type, strict_floats):
+    if expected_type is float and not strict_floats:
+        return isinstance(value, (six.integer_types, float))
+    if expected_type in six.integer_types:
         return isinstance(value, six.integer_types)
-    else:
-        return isinstance(value, expected_type)
+
+    return isinstance(value, expected_type)

@@ -1,3 +1,4 @@
+# coding: utf-8
 #
 # Copyright 2015 Palantir Technologies, Inc.
 #
@@ -14,6 +15,7 @@
 # limitations under the License.
 
 """Data structures for wrapping methods and information about them."""
+from __future__ import absolute_import, division, print_function
 
 from collections import namedtuple
 
