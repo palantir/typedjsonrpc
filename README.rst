@@ -17,16 +17,16 @@
 typedjsonrpc
 ============
 .. image:: https://img.shields.io/pypi/status/typedjsonrpc.svg
-     :target: https://img.shields.io/pypi/status/typedjsonrpc
+     :target: https://pypi.python.org/pypi/typedjsonrpc
 
 .. image:: https://img.shields.io/pypi/l/typedjsonrpc.svg
-     :target: https://img.shields.io/pypi/l/typedjsonrpc
+     :target: https://pypi.python.org/pypi/typedjsonrpc
 
 .. image:: https://img.shields.io/pypi/pyversions/typedjsonrpc.svg
-     :target: https://img.shields.io/pypi/pyversions/typedjsonrpc
+     :target: https://pypi.python.org/pypi/typedjsonrpc
 
 .. image:: https://img.shields.io/pypi/wheel/typedjsonrpc.svg
-     :target: https://img.shields.io/pypi/wheel/typedjsonrpc
+     :target: https://pypi.python.org/pypi/typedjsonrpc
 
 .. image:: https://badge.fury.io/py/typedjsonrpc.svg
      :target: http://badge.fury.io/py/typedjsonrpc
