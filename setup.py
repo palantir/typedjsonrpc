@@ -68,7 +68,7 @@ setup(
 
     install_requires=[
         "six>=1.0.0,<2.0.0",
-        "werkzeug>=0.10.0,<0.11.0",
+        "werkzeug>=0.10.0,<0.16.0",
         "wrapt>=1.10.0,<2.0.0",
     ],
 )
